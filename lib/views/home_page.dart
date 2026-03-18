@@ -11,12 +11,14 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Money Tracker'),
+        title: Text('Money Tracker', style: textTheme.headlineSmall),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
       body: BlocBuilder<TransactionCubit, List<TransactionModel>>(
         builder: (context, transactions) {
@@ -38,14 +40,16 @@ class HomePage extends StatelessWidget {
                 totalIncome,
                 totalExpense,
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: Row(
                   children: [
                     Text(
                       'Transaksi Terakhir',
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -92,41 +96,37 @@ class HomePage extends StatelessWidget {
       locale: 'id_ID',
       symbol: 'Rp ',
     );
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: colorScheme.shadow.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'Total Saldo',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             currencyFormat.format(totalBalance),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
+            style: textTheme.displaySmall?.copyWith(
+              color: colorScheme.onSurface,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -139,14 +139,14 @@ class HomePage extends StatelessWidget {
                 'Pemasukan',
                 totalIncome,
                 Icons.arrow_upward,
-                Colors.greenAccent,
+                Colors.green,
               ),
               _buildSummaryItem(
                 context,
                 'Pengeluaran',
                 totalExpense,
                 Icons.arrow_downward,
-                Colors.redAccent,
+                Colors.red,
               ),
             ],
           ),
@@ -166,16 +166,18 @@ class HomePage extends StatelessWidget {
       locale: 'id_ID',
       symbol: 'Rp ',
     );
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: iconColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: iconColor, size: 20),
+          child: Icon(icon, color: iconColor, size: 24),
         ),
         const SizedBox(width: 12),
         Column(
@@ -183,13 +185,14 @@ class HomePage extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               currencyFormat.format(amount),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
