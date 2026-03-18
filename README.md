@@ -49,7 +49,7 @@ Pastikan Anda sudah menginstal Flutter SDK di komputer Anda.
 
 | Home Page | Tambah Transaksi |
 | :---: | :---: |
-| ![Home](https://via.placeholder.com/200x400?text=Home+Page) | ![Add](https://via.placeholder.com/200x400?text=Add+Transaction) |
+| ![Home](assets/images/home_page.jpeg) | ![Add](assets/images/add_transaction.jpeg) |
 
 ## 📁 Struktur Folder
 
