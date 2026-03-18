@@ -18,6 +18,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String _type = 'expense';
   DateTime _selectedDate = DateTime.now();
   String _category = 'Lainnya';
+  String _paymentMethod = 'cash';
 
   @override
   void dispose() {
@@ -42,129 +43,256 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Transaksi'), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(
+          'Tambah Transaksi',
+          style: textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Container(
+        height: MediaQuery.of(context).size.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [colorScheme.primary, colorScheme.secondary],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tipe Transaksi (Income / Expense)
-              Row(
-                children: [
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text('Pengeluaran'),
-                      selected: _type == 'expense',
-                      onSelected: (selected) {
-                        if (selected) setState(() => _type = 'expense');
-                      },
-                      selectedColor: Colors.redAccent.withOpacity(0.2),
-                      labelStyle: TextStyle(
-                        color: _type == 'expense' ? Colors.red : Colors.black,
+              const SizedBox(height: kToolbarHeight + 40),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(24.0),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(32)),
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Transaction Type Selector
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'expense',
+                            label: Text('Pengeluaran'),
+                            icon: Icon(Icons.arrow_downward, size: 18),
+                          ),
+                          ButtonSegment(
+                            value: 'income',
+                            label: Text('Pemasukan'),
+                            icon: Icon(Icons.arrow_upward, size: 18),
+                          ),
+                        ],
+                        selected: {_type},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          setState(() {
+                            _type = newSelection.first;
+                          });
+                        },
+                        style: SegmentedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade50,
+                          selectedBackgroundColor: colorScheme.primary,
+                          selectedForegroundColor: Colors.white,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ChoiceChip(
-                      label: const Text('Pemasukan'),
-                      selected: _type == 'income',
-                      onSelected: (selected) {
-                        if (selected) setState(() => _type = 'income');
-                      },
-                      selectedColor: Colors.greenAccent.withOpacity(0.2),
-                      labelStyle: TextStyle(
-                        color: _type == 'income' ? Colors.green : Colors.black,
+                      const SizedBox(height: 32),
+
+                      // Amount Section
+                      Text(
+                        'Nominal',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _amountController,
+                        style: textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '0',
+                          prefixIcon: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Rp',
+                              style: textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          prefixIconConstraints: const BoxConstraints(
+                            minWidth: 0,
+                            minHeight: 0,
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Nominal tidak boleh kosong';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Masukkan angka yang valid';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
 
-              // Judul
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.title),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Judul tidak boleh kosong';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                      // Payment Method
+                      Text(
+                        'Metode Pembayaran',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'cash',
+                            label: Text('Tunai'),
+                            icon: Icon(Icons.money, size: 18),
+                          ),
+                          ButtonSegment(
+                            value: 'bank',
+                            label: Text('Bank'),
+                            icon: Icon(Icons.account_balance, size: 18),
+                          ),
+                        ],
+                        selected: {_paymentMethod},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          setState(() {
+                            _paymentMethod = newSelection.first;
+                          });
+                        },
+                        style: SegmentedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade50,
+                          selectedBackgroundColor: colorScheme.primary,
+                          selectedForegroundColor: Colors.white,
+                          side: BorderSide.none,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
 
-              // Jumlah
-              TextFormField(
-                controller: _amountController,
-                decoration: const InputDecoration(
-                  labelText: 'Jumlah (Rp)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.money),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Jumlah tidak boleh kosong';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Masukkan angka yang valid';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+                      // Title Section
+                      Text(
+                        'Keterangan',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          hintText: 'Misal: Makan Siang',
+                          prefixIcon: Icon(Icons.description_outlined),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Keterangan tidak boleh kosong';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
 
-              // Tanggal
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_today),
-                title: Text(
-                  'Tanggal: ${DateFormat('dd MMM yyyy').format(_selectedDate)}',
-                ),
-                trailing: TextButton(
-                  onPressed: () => _selectDate(context),
-                  child: const Text('Pilih Tanggal'),
-                ),
-              ),
-              const SizedBox(height: 32),
+                      // Date Picker Section
+                      Text(
+                        'Tanggal',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () => _selectDate(context),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                color: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                DateFormat(
+                                  'EEEE, dd MMMM yyyy',
+                                  'id_ID',
+                                ).format(_selectedDate),
+                                style: textTheme.bodyLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 48),
 
-              // Tombol Simpan
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final trx = TransactionModel(
-                        title: _titleController.text,
-                        amount: double.parse(_amountController.text),
-                        type: _type,
-                        date: _selectedDate,
-                        category: _category,
-                      );
-                      context.read<TransactionCubit>().add(trx);
-                      Navigator.pop(context);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Simpan Transaksi',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      // Save Button
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            final trx = TransactionModel(
+                              title: _titleController.text,
+                              amount: double.parse(_amountController.text),
+                              type: _type,
+                              date: _selectedDate,
+                              category: _category,
+                              paymentMethod: _paymentMethod,
+                            );
+                            context.read<TransactionCubit>().add(trx);
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: const Text(
+                          'Simpan Transaksi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

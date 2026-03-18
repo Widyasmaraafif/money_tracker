@@ -18,50 +18,76 @@ class TransactionItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-      elevation: 2,
-      shadowColor: colorScheme.shadow.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        leading: CircleAvatar(
-          backgroundColor: isIncome
-              ? Colors.green.withOpacity(0.1)
-              : Colors.red.withOpacity(0.1),
-          child: Icon(
-            isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-            color: isIncome ? Colors.green : Colors.red,
-            size: 28,
-          ),
-        ),
-        title: Text(
-          transaction.title,
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          DateFormat('dd MMM yyyy').format(transaction.date),
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount)}',
-              style: textTheme.titleMedium?.copyWith(
-                color: isIncome ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isIncome ? Colors.green.shade50 : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(16),
             ),
-            if (onDelete != null)
-              IconButton(
-                icon: Icon(Icons.delete_outline, color: colorScheme.error),
-                onPressed: onDelete,
+            child: Icon(
+              isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+              color: isIncome ? Colors.green : Colors.red,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.title,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date),
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            transaction.paymentMethod == 'cash'
+                ? Icons.wallet
+                : Icons.account_balance,
+            color: colorScheme.onSurfaceVariant,
+            size: 24,
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount)}',
+                style: textTheme.titleMedium?.copyWith(
+                  color: isIncome ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-          ],
-        ),
+              if (onDelete != null)
+                InkWell(
+                  onTap: onDelete,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.grey.shade400,
+                      size: 20,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

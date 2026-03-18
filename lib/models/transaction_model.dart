@@ -19,11 +19,15 @@ class TransactionModel extends HiveObject {
   @HiveField(4)
   String category;
 
+  @HiveField(5)
+  String paymentMethod;
+
   TransactionModel({
     required this.title,
     required this.amount,
     required this.type,
     required this.date,
     required this.category,
+    required this.paymentMethod,
   });
 }
