@@ -49,25 +49,26 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(
-          'Tambah Transaksi',
-          style: textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
+        title: const Text('Tambah Transaksi'),
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
             color: Colors.white,
           ),
+          onPressed: () => Navigator.pop(context),
         ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         height: MediaQuery.of(context).size.height,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [colorScheme.primary, colorScheme.secondary],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.primary,
+              colorScheme.primary.withOpacity(0.8),
+              colorScheme.secondary.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SingleChildScrollView(
@@ -76,28 +77,42 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               const SizedBox(height: kToolbarHeight + 40),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.all(Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
                 ),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Transaction Type Selector
+                      Text(
+                        'Jenis Transaksi',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       SegmentedButton<String>(
                         segments: const [
                           ButtonSegment(
                             value: 'expense',
                             label: Text('Pengeluaran'),
-                            icon: Icon(Icons.arrow_downward, size: 18),
+                            icon: Icon(Icons.remove_circle_outline, size: 18),
                           ),
                           ButtonSegment(
                             value: 'income',
                             label: Text('Pemasukan'),
-                            icon: Icon(Icons.arrow_upward, size: 18),
+                            icon: Icon(Icons.add_circle_outline, size: 18),
                           ),
                         ],
                         selected: {_type},
@@ -107,8 +122,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           });
                         },
                         style: SegmentedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade50,
-                          selectedBackgroundColor: colorScheme.primary,
+                          backgroundColor: const Color(0xFFF8FAFC),
+                          selectedBackgroundColor: _type == 'income'
+                              ? Colors.green.shade600
+                              : Colors.orange.shade700,
                           selectedForegroundColor: Colors.white,
                           side: BorderSide.none,
                           shape: RoundedRectangleBorder(
@@ -117,21 +134,19 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         ),
                       ),
                       const SizedBox(height: 32),
-
-                      // Amount Section
                       Text(
                         'Nominal',
                         style: textTheme.labelLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _amountController,
                         style: textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
+                          color: const Color(0xFF1E293B),
                         ),
                         decoration: InputDecoration(
                           hintText: '0',
@@ -161,62 +176,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 24),
-
-                      // Payment Method
-                      Text(
-                        'Metode Pembayaran',
-                        style: textTheme.labelLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(
-                            value: 'cash',
-                            label: Text('Tunai'),
-                            icon: Icon(Icons.money, size: 18),
-                          ),
-                          ButtonSegment(
-                            value: 'bank',
-                            label: Text('Bank'),
-                            icon: Icon(Icons.account_balance, size: 18),
-                          ),
-                        ],
-                        selected: {_paymentMethod},
-                        onSelectionChanged: (Set<String> newSelection) {
-                          setState(() {
-                            _paymentMethod = newSelection.first;
-                          });
-                        },
-                        style: SegmentedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade50,
-                          selectedBackgroundColor: colorScheme.primary,
-                          selectedForegroundColor: Colors.white,
-                          side: BorderSide.none,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Title Section
+                      const SizedBox(height: 32),
                       Text(
                         'Keterangan',
                         style: textTheme.labelLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _titleController,
                         decoration: const InputDecoration(
-                          hintText: 'Misal: Makan Siang',
-                          prefixIcon: Icon(Icons.description_outlined),
+                          hintText: 'Contoh: Beli Kopi',
+                          prefixIcon: Icon(Icons.edit_note_rounded),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -225,17 +198,67 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 24),
-
-                      // Date Picker Section
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Metode',
+                                  style: textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFF64748B),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SegmentedButton<String>(
+                                  segments: const [
+                                    ButtonSegment(
+                                      value: 'cash',
+                                      label: Text('Tunai'),
+                                    ),
+                                    ButtonSegment(
+                                      value: 'bank',
+                                      label: Text('Bank'),
+                                    ),
+                                  ],
+                                  selected: {_paymentMethod},
+                                  onSelectionChanged:
+                                      (Set<String> newSelection) {
+                                        setState(() {
+                                          _paymentMethod = newSelection.first;
+                                        });
+                                      },
+                                  style: SegmentedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF8FAFC),
+                                    selectedBackgroundColor:
+                                        colorScheme.primary,
+                                    selectedForegroundColor: Colors.white,
+                                    side: BorderSide.none,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
                       Text(
                         'Tanggal',
                         style: textTheme.labelLarge?.copyWith(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       InkWell(
                         onTap: () => _selectDate(context),
                         borderRadius: BorderRadius.circular(16),
@@ -245,34 +268,36 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                             vertical: 16,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
+                            color: const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
                             children: [
                               Icon(
-                                Icons.calendar_today_outlined,
+                                Icons.calendar_today_rounded,
+                                size: 20,
                                 color: colorScheme.primary,
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
                               Text(
                                 DateFormat(
                                   'EEEE, dd MMMM yyyy',
                                   'id_ID',
                                 ).format(_selectedDate),
-                                style: textTheme.bodyLarge,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF1E293B),
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 48),
-
-                      // Save Button
                       ElevatedButton(
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            final trx = TransactionModel(
+                            final transaction = TransactionModel(
                               title: _titleController.text,
                               amount: double.parse(_amountController.text),
                               type: _type,
@@ -280,22 +305,17 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               category: _category,
                               paymentMethod: _paymentMethod,
                             );
-                            context.read<TransactionCubit>().add(trx);
+                            context.read<TransactionCubit>().add(transaction);
                             Navigator.pop(context);
                           }
                         },
-                        child: const Text(
-                          'Simpan Transaksi',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: const Text('Simpan Transaksi'),
                       ),
                     ],
                   ),
                 ),
               ),
+              const SizedBox(height: 40),
             ],
           ),
         ),

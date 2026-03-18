@@ -31,20 +31,39 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Money Tracker',
         theme: ThemeData(
+          useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(
-              0xFF8E7AB5,
-            ), // Ungu yang lebih soft (Lavender-ish)
-            primary: const Color(0xFF8E7AB5),
-            secondary: const Color(0xFFB4A1D7),
+            seedColor: const Color(0xFF6366F1), // Modern Indigo
+            primary: const Color(0xFF6366F1),
+            secondary: const Color(0xFF818CF8),
             surface: Colors.white,
+            onSurface: const Color(0xFF1E293B),
+            surfaceVariant: const Color(0xFFF8FAFC),
             brightness: Brightness.light,
           ),
-          textTheme: GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme),
-          useMaterial3: true,
+          textTheme: GoogleFonts.plusJakartaSansTextTheme(
+            Theme.of(context).textTheme,
+          ),
+          appBarTheme: const AppBarTheme(
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            titleTextStyle: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          cardTheme: CardThemeData(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            color: Colors.white,
+          ),
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -55,20 +74,41 @@ class MyApp extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF8E7AB5), width: 2),
+              borderSide: const BorderSide(
+                color: Color(0xFF6366F1),
+                width: 1.5,
+              ),
             ),
-            prefixIconColor: const Color(0xFF8E7AB5),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+            prefixIconColor: const Color(0xFF6366F1),
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8E7AB5),
+              backgroundColor: const Color(0xFF6366F1),
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 56),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 0,
+              elevation: 4,
+              shadowColor: const Color(0xFF6366F1).withOpacity(0.3),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+          ),
+          floatingActionButtonTheme: FloatingActionButtonThemeData(
+            backgroundColor: const Color(0xFF6366F1),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
           ),
         ),
         home: const HomePage(),

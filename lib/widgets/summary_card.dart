@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/transaction_model.dart';
-import 'summary_item.dart';
 
 class SummaryCard extends StatelessWidget {
   final List<TransactionModel> transactions;
@@ -27,90 +26,172 @@ class SummaryCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
       ),
       child: Column(
         children: [
-          Text(
-            'Total Saldo',
-            style: textTheme.titleMedium?.copyWith(
-              color: colorScheme.onPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            currencyFormat.format(totalBalance),
-            style: textTheme.displaySmall?.copyWith(
-              color: colorScheme.onPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total Saldo',
+                    style: textTheme.titleSmall?.copyWith(
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    currencyFormat.format(totalBalance),
+                    style: textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
-          IntrinsicHeight(
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                SummaryItem(
-                  label: 'Cash',
-                  amount: cashBalance,
-                  icon: Icons.wallet,
-                  color: colorScheme.onPrimary,
+                Expanded(
+                  child: _buildSimpleSummary(
+                    label: 'Pemasukan',
+                    amount: totalIncome,
+                    icon: Icons.arrow_downward,
+                    color: Colors.greenAccent.shade400,
+                  ),
                 ),
-                const VerticalDivider(
-                  color: Colors.white54,
-                  thickness: 1,
+                Container(
+                  height: 32,
                   width: 1,
-                  indent: 8,
-                  endIndent: 8,
+                  color: Colors.white.withOpacity(0.2),
                 ),
-                SummaryItem(
-                  label: 'Bank',
-                  amount: bankBalance,
-                  icon: Icons.account_balance,
-                  color: colorScheme.onPrimary,
+                Expanded(
+                  child: _buildSimpleSummary(
+                    label: 'Pengeluaran',
+                    amount: totalExpense,
+                    icon: Icons.arrow_upward,
+                    color: Colors.orangeAccent.shade200,
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          IntrinsicHeight(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                SummaryItem(
-                  label: 'Pemasukan',
-                  amount: totalIncome,
-                  icon: Icons.arrow_upward,
-                  color: Colors.green.shade300,
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSmallInfo('Cash', cashBalance, Icons.money),
+              _buildSmallInfo('Bank', bankBalance, Icons.account_balance),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleSummary({
+    required String label,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                currencyFormat.format(amount),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
                 ),
-                const VerticalDivider(
-                  color: Colors.white54,
-                  thickness: 1,
-                  width: 1,
-                  indent: 8,
-                  endIndent: 8,
-                ),
-                SummaryItem(
-                  label: 'Pengeluaran',
-                  amount: totalExpense,
-                  icon: Icons.arrow_downward,
-                  color: Colors.red.shade300,
-                ),
-              ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSmallInfo(String label, double amount, IconData icon) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+
+    return Flexible(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white54, size: 14),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '$label: ${currencyFormat.format(amount)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

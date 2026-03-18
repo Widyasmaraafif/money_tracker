@@ -17,79 +17,123 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Money Tracker',
-          style: textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onPrimary,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Money Tracker')),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [colorScheme.primary, colorScheme.secondary],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.primary,
+              colorScheme.primary.withOpacity(0.8),
+              colorScheme.secondary.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: BlocBuilder<TransactionCubit, List<TransactionModel>>(
           builder: (context, transactions) {
-            if (transactions.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Belum ada transaksi. Tambahkan sekarang!',
-                  style: TextStyle(color: Colors.white),
-                ),
-              );
-            }
-
             return Column(
               children: [
-                const SizedBox(height: kToolbarHeight + 32),
+                const SizedBox(height: kToolbarHeight + 16),
                 SummaryCard(transactions: transactions),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0,
-                    vertical: 8.0,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Transaksi Terakhir',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 16),
                 Expanded(
-                  child: Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: const RoundedRectangleBorder(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
                       borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
+                        topLeft: Radius.circular(32),
+                        topRight: Radius.circular(32),
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 10,
+                          offset: Offset(0, -5),
+                        ),
+                      ],
                     ),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: 16),
-                      itemCount: transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = transactions[index];
-                        return TransactionItem(
-                          transaction: transaction,
-                          onDelete: () {
-                            context.read<TransactionCubit>().delete(index);
-                          },
-                        );
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Transaksi Terakhir',
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF1E293B),
+                                ),
+                              ),
+                              if (transactions.isNotEmpty)
+                                Text(
+                                  '${transactions.length} Total',
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: Colors.grey.shade500,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: transactions.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.receipt_long_outlined,
+                                        size: 80,
+                                        color: Colors.grey.shade200,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        'Belum ada transaksi',
+                                        style: textTheme.titleMedium?.copyWith(
+                                          color: Colors.grey.shade400,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Mulai catat keuanganmu hari ini!',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 16,
+                                  ),
+                                  itemCount: transactions.length,
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(
+                                        height: 1,
+                                        indent: 80,
+                                        endIndent: 24,
+                                        color: Color(0xFFF1F5F9),
+                                      ),
+                                  itemBuilder: (context, index) {
+                                    final transaction = transactions[index];
+                                    return TransactionItem(
+                                      transaction: transaction,
+                                      onDelete: () {
+                                        _showDeleteDialog(context, index);
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -98,14 +142,37 @@ class HomePage extends StatelessWidget {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.large(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddTransactionPage()),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, size: 32),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Transaksi?'),
+        content: const Text('Apakah Anda yakin ingin menghapus transaksi ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<TransactionCubit>().delete(index);
+              Navigator.pop(context);
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
