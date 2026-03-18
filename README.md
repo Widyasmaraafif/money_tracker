@@ -45,8 +45,6 @@ Pastikan Anda sudah menginstal Flutter SDK di komputer Anda.
 
 ## 📸 Cuplikan Layar
 
-*(Tambahkan gambar cuplikan layar aplikasi Anda di sini untuk tampilan GitHub yang lebih menarik)*
-
 | Home Page | Tambah Transaksi |
 | :---: | :---: |
 | ![Home](lib/assets/images/home_page.jpeg) | ![Add](lib/assets/images/add_transaction.jpeg) |

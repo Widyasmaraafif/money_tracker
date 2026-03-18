@@ -17,6 +17,7 @@ class SummaryCard extends StatelessWidget {
     final bankBalance = _calculateBalance(transactions, paymentMethod: 'bank');
     final totalIncome = _calculateTotal(transactions, 'income');
     final totalExpense = _calculateTotal(transactions, 'expense');
+    final expenseRatio = totalIncome > 0 ? totalExpense / totalIncome : 0.0;
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -73,6 +74,40 @@ class SummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
+          // Progress bar for expense ratio
+          if (totalIncome > 0) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Rasio Pengeluaran',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                ),
+                Text(
+                  '${(expenseRatio * 100).toStringAsFixed(1)}%',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: expenseRatio.clamp(0.0, 1.0),
+                backgroundColor: Colors.white.withOpacity(0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  expenseRatio > 0.8 ? Colors.redAccent : Colors.white70,
+                ),
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -107,14 +142,51 @@ class SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSmallInfo('Cash', cashBalance, Icons.money),
-              _buildSmallInfo('Bank', bankBalance, Icons.account_balance),
+              _buildMethodSummary(
+                label: 'Tunai',
+                amount: cashBalance,
+                icon: Icons.wallet_outlined,
+              ),
+              _buildMethodSummary(
+                label: 'Bank',
+                amount: bankBalance,
+                icon: Icons.account_balance_outlined,
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMethodSummary({
+    required String label,
+    required double amount,
+    required IconData icon,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: Colors.white70),
+        const SizedBox(width: 4),
+        Text(
+          '$label: ',
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        ),
+        Text(
+          NumberFormat.currency(
+            locale: 'id_ID',
+            symbol: 'Rp',
+            decimalDigits: 0,
+          ).format(amount),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 
@@ -124,78 +196,38 @@ class SummaryCard extends StatelessWidget {
     required IconData icon,
     required Color color,
   }) {
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white70, fontSize: 11),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                currencyFormat.format(amount),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+        const SizedBox(height: 4),
+        FittedBox(
+          child: Text(
+            NumberFormat.currency(
+              locale: 'id_ID',
+              symbol: 'Rp ',
+              decimalDigits: 0,
+            ).format(amount),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSmallInfo(String label, double amount, IconData icon) {
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-
-    return Flexible(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white54, size: 14),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              '$label: ${currencyFormat.format(amount)}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -205,7 +237,9 @@ class SummaryCard extends StatelessWidget {
   }) {
     double balance = 0;
     for (var trx in transactions) {
-      if (paymentMethod != null && trx.paymentMethod != paymentMethod) continue;
+      if (paymentMethod != null && trx.paymentMethod != paymentMethod) {
+        continue;
+      }
       if (trx.type == 'income') {
         balance += trx.amount;
       } else {
@@ -218,6 +252,6 @@ class SummaryCard extends StatelessWidget {
   double _calculateTotal(List<TransactionModel> transactions, String type) {
     return transactions
         .where((trx) => trx.type == type)
-        .fold(0, (sum, item) => sum + item.amount);
+        .fold(0, (sum, trx) => sum + trx.amount);
   }
 }

@@ -20,4 +20,9 @@ class TransactionCubit extends Cubit<List<TransactionModel>> {
     service.delete(index);
     load();
   }
+
+  void update(int index, TransactionModel trx) {
+    service.update(index, trx);
+    load();
+  }
 }

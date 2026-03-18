@@ -5,7 +5,10 @@ import '../blocs/transaction_cubit.dart';
 import '../models/transaction_model.dart';
 
 class AddTransactionPage extends StatefulWidget {
-  const AddTransactionPage({super.key});
+  final TransactionModel? transaction;
+  final int? index;
+
+  const AddTransactionPage({super.key, this.transaction, this.index});
 
   @override
   State<AddTransactionPage> createState() => _AddTransactionPageState();
@@ -13,12 +16,27 @@ class AddTransactionPage extends StatefulWidget {
 
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
-  String _type = 'expense';
-  DateTime _selectedDate = DateTime.now();
-  String _category = 'Lainnya';
-  String _paymentMethod = 'cash';
+  late final TextEditingController _titleController;
+  late final TextEditingController _amountController;
+  late String _type;
+  late DateTime _selectedDate;
+  late String _category;
+  late String _paymentMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(
+      text: widget.transaction?.title ?? '',
+    );
+    _amountController = TextEditingController(
+      text: widget.transaction?.amount.toString() ?? '',
+    );
+    _type = widget.transaction?.type ?? 'expense';
+    _selectedDate = widget.transaction?.date ?? DateTime.now();
+    _category = widget.transaction?.category ?? 'Lainnya';
+    _paymentMethod = widget.transaction?.paymentMethod ?? 'cash';
+  }
 
   @override
   void dispose() {
@@ -49,7 +67,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Tambah Transaksi'),
+        title: Text(
+          widget.transaction != null ? 'Edit Transaksi' : 'Tambah Transaksi',
+        ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
@@ -199,6 +219,54 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         },
                       ),
                       const SizedBox(height: 32),
+                      Text(
+                        'Kategori',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _category,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        items:
+                            [
+                              'Makanan & Minuman',
+                              'Transportasi',
+                              'Belanja',
+                              'Hiburan',
+                              'Gaji',
+                              'Tagihan',
+                              'Kesehatan',
+                              'Pendidikan',
+                              'Lainnya',
+                            ].map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _category = newValue;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 32),
                       Row(
                         children: [
                           Expanded(
@@ -305,11 +373,24 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               category: _category,
                               paymentMethod: _paymentMethod,
                             );
-                            context.read<TransactionCubit>().add(transaction);
+
+                            if (widget.transaction != null &&
+                                widget.index != null) {
+                              context.read<TransactionCubit>().update(
+                                widget.index!,
+                                transaction,
+                              );
+                            } else {
+                              context.read<TransactionCubit>().add(transaction);
+                            }
                             Navigator.pop(context);
                           }
                         },
-                        child: const Text('Simpan Transaksi'),
+                        child: Text(
+                          widget.transaction != null
+                              ? 'Simpan Perubahan'
+                              : 'Simpan Transaksi',
+                        ),
                       ),
                     ],
                   ),

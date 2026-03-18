@@ -5,8 +5,14 @@ import '../models/transaction_model.dart';
 class TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
-  const TransactionItem({super.key, required this.transaction, this.onDelete});
+  const TransactionItem({
+    super.key,
+    required this.transaction,
+    this.onDelete,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,12 +20,14 @@ class TransactionItem extends StatelessWidget {
     final currencyFormat = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
+      decimalDigits: 0,
     );
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     return InkWell(
-      onTap: onDelete != null ? () => onDelete!() : null,
+      onTap: onTap,
+      onLongPress: onDelete,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
@@ -67,7 +75,7 @@ class TransactionItem extends StatelessWidget {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          '${transaction.paymentMethod == 'cash' ? 'Tunai' : 'Bank'} • ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date)}',
+                          '${transaction.category} • ${transaction.paymentMethod == 'cash' ? 'Tunai' : 'Bank'} • ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall?.copyWith(
@@ -82,23 +90,32 @@ class TransactionItem extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: isIncome
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: isIncome
+                        ? Colors.green.shade700
+                        : Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
+                ),
+                if (onDelete != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      size: 18,
+                      color: Colors.red.shade300,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: onDelete,
+                  ),
+              ],
             ),
           ],
         ),

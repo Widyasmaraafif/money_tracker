@@ -13,4 +13,8 @@ class HiveService {
   void delete(int index) {
     box.deleteAt(index);
   }
+
+  void update(int index, TransactionModel trx) {
+    box.putAt(index, trx);
+  }
 }
