@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
+import '../utils/categories.dart';
 
 class TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
@@ -25,6 +26,8 @@ class TransactionItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    final category = TransactionCategory.getByName(transaction.category);
+
     return InkWell(
       onTap: onTap,
       onLongPress: onDelete,
@@ -35,18 +38,10 @@ class TransactionItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isIncome
-                    ? Colors.greenAccent.shade100.withOpacity(0.2)
-                    : Colors.orangeAccent.shade100.withOpacity(0.2),
+                color: category.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(
-                isIncome ? Icons.add_rounded : Icons.remove_rounded,
-                color: isIncome
-                    ? Colors.green.shade700
-                    : Colors.orange.shade700,
-                size: 24,
-              ),
+              child: Icon(category.icon, color: category.color, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -65,17 +60,30 @@ class TransactionItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(
-                        transaction.paymentMethod == 'cash'
-                            ? Icons.wallet_outlined
-                            : Icons.account_balance_outlined,
-                        size: 12,
-                        color: Colors.grey.shade500,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          transaction.paymentMethod == 'cash'
+                              ? 'Tunai'
+                              : 'Bank',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${transaction.category} • ${transaction.paymentMethod == 'cash' ? 'Tunai' : 'Bank'} • ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date)}',
+                          '${transaction.category} • ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall?.copyWith(
@@ -94,29 +102,32 @@ class TransactionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount)}',
+                  '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount).replaceAll('Rp ', '')}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                     color: isIncome
                         ? Colors.green.shade700
                         : Colors.red.shade700,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (onDelete != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      size: 18,
-                      color: Colors.red.shade300,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: onDelete,
+                Text(
+                  isIncome ? 'Pemasukan' : 'Pengeluaran',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: Colors.grey.shade400,
                   ),
+                ),
               ],
             ),
+            if (onDelete != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: onDelete,
+                tooltip: 'Hapus transaksi',
+              ),
+            ],
           ],
         ),
       ),

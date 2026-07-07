@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../blocs/transaction_cubit.dart';
-import '../models/transaction_model.dart';
+import '../blocs/recurring_cubit.dart';
+import '../models/recurring_transaction_model.dart';
 import '../utils/categories.dart';
+import '../services/notification_service.dart';
 
-class AddTransactionPage extends StatefulWidget {
-  final TransactionModel? transaction;
+class AddRecurringTransactionPage extends StatefulWidget {
+  final RecurringTransactionModel? transaction;
   final int? index;
 
-  const AddTransactionPage({super.key, this.transaction, this.index});
+  const AddRecurringTransactionPage({super.key, this.transaction, this.index});
 
   @override
-  State<AddTransactionPage> createState() => _AddTransactionPageState();
+  State<AddRecurringTransactionPage> createState() =>
+      _AddRecurringTransactionPageState();
 }
 
-class _AddTransactionPageState extends State<AddTransactionPage> {
+class _AddRecurringTransactionPageState
+    extends State<AddRecurringTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   late String _type;
-  late DateTime _selectedDate;
+  late DateTime _startDate;
+  DateTime? _endDate;
   late String _category;
   late String _paymentMethod;
+  late RecurrenceType _recurrenceType;
+  bool _hasReminder = false;
+  TimeOfDay? _reminderTime;
 
   @override
   void initState() {
@@ -34,9 +41,14 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       text: widget.transaction?.amount.toString() ?? '',
     );
     _type = widget.transaction?.type ?? 'expense';
-    _selectedDate = widget.transaction?.date ?? DateTime.now();
+    _startDate = widget.transaction?.startDate ?? DateTime.now();
+    _endDate = widget.transaction?.endDate;
     _category = widget.transaction?.category ?? 'Lainnya';
     _paymentMethod = widget.transaction?.paymentMethod ?? 'cash';
+    _recurrenceType =
+        widget.transaction?.recurrenceType ?? RecurrenceType.monthly;
+    _hasReminder = widget.transaction?.hasReminder ?? false;
+    _reminderTime = widget.transaction?.reminderTime;
   }
 
   @override
@@ -46,16 +58,32 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: isStartDate ? _startDate : _endDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null) {
       setState(() {
-        _selectedDate = picked;
+        if (isStartDate) {
+          _startDate = picked;
+        } else {
+          _endDate = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _reminderTime = picked;
       });
     }
   }
@@ -69,7 +97,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          widget.transaction != null ? 'Edit Transaksi' : 'Tambah Transaksi',
+          widget.transaction != null
+              ? 'Edit Transaksi Rutin'
+              : 'Tambah Transaksi Rutin',
         ),
         leading: IconButton(
           icon: const Icon(
@@ -321,70 +351,273 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'Tanggal',
+                        'Perulangan',
                         style: textTheme.labelLarge?.copyWith(
                           color: const Color(0xFF64748B),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      InkWell(
-                        onTap: () => _selectDate(context),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                      DropdownButtonFormField<RecurrenceType>(
+                        value: _recurrenceType,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
                           ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 20,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                DateFormat(
-                                  'EEEE, dd MMMM yyyy',
-                                  'id_ID',
-                                ).format(_selectedDate),
-                                style: textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                              ),
-                            ],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                         ),
+                        items: RecurrenceType.values.map((type) {
+                          String label = '';
+                          switch (type) {
+                            case RecurrenceType.daily:
+                              label = 'Harian';
+                              break;
+                            case RecurrenceType.weekly:
+                              label = 'Mingguan';
+                              break;
+                            case RecurrenceType.monthly:
+                              label = 'Bulanan';
+                              break;
+                            case RecurrenceType.yearly:
+                              label = 'Tahunan';
+                              break;
+                          }
+                          return DropdownMenuItem<RecurrenceType>(
+                            value: type,
+                            child: Text(label),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _recurrenceType = newValue;
+                            });
+                          }
+                        },
                       ),
+                      const SizedBox(height: 32),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Mulai',
+                                  style: textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFF64748B),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                InkWell(
+                                  onTap: () => _selectDate(context, true),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 20,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          DateFormat(
+                                            'dd MMM yyyy',
+                                            'id_ID',
+                                          ).format(_startDate),
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Selesai (Opsional)',
+                                  style: textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFF64748B),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                InkWell(
+                                  onTap: () => _selectDate(context, false),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_rounded,
+                                          size: 20,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          _endDate != null
+                                              ? DateFormat(
+                                                  'dd MMM yyyy',
+                                                  'id_ID',
+                                                ).format(_endDate!)
+                                              : 'Pilih Tanggal',
+                                          style: textTheme.bodyMedium?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: _endDate != null
+                                                ? const Color(0xFF1E293B)
+                                                : Colors.grey.shade400,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      SwitchListTile(
+                        title: Text(
+                          'Reminder',
+                          style: textTheme.labelLarge?.copyWith(
+                            color: const Color(0xFF1E293B),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        value: _hasReminder,
+                        onChanged: (value) {
+                          setState(() {
+                            _hasReminder = value;
+                            if (_hasReminder && _reminderTime == null) {
+                              _reminderTime = TimeOfDay.now();
+                            }
+                          });
+                        },
+                        activeColor: colorScheme.primary,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      if (_hasReminder) ...[
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () => _selectTime(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 20,
+                                  color: colorScheme.primary,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _reminderTime != null
+                                      ? _reminderTime!.format(context)
+                                      : 'Pilih Waktu',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 48),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            final transaction = TransactionModel(
+                            // Create transaction and use the setter if needed
+                            final transaction = RecurringTransactionModel(
                               title: _titleController.text,
                               amount: double.parse(_amountController.text),
                               type: _type,
-                              date: _selectedDate,
                               category: _category,
                               paymentMethod: _paymentMethod,
+                              recurrenceType: _recurrenceType,
+                              startDate: _startDate,
+                              endDate: _endDate,
+                              nextOccurrence: _startDate,
+                              isActive: true,
+                              hasReminder: _hasReminder,
                             );
+                            // Use the setter to handle conversion from TimeOfDay to DateTime
+                            transaction.reminderTime = _reminderTime;
 
                             if (widget.transaction != null &&
                                 widget.index != null) {
-                              context.read<TransactionCubit>().update(
+                              context.read<RecurringCubit>().update(
                                 widget.index!,
                                 transaction,
                               );
+                              if (_hasReminder) {
+                                await NotificationService.scheduleReminder(
+                                  transaction,
+                                  widget.index! + 1000,
+                                );
+                              } else {
+                                await NotificationService.cancelReminder(
+                                  widget.index! + 1000,
+                                );
+                              }
                             } else {
-                              context.read<TransactionCubit>().add(transaction);
+                              context.read<RecurringCubit>().add(transaction);
+                              final index =
+                                  context.read<RecurringCubit>().state.length -
+                                  1;
+                              if (_hasReminder) {
+                                await NotificationService.scheduleReminder(
+                                  transaction,
+                                  index + 1000,
+                                );
+                              }
                             }
-                            Navigator.pop(context);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                            }
                           }
                         },
                         child: Text(

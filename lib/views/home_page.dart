@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/transaction_cubit.dart';
+import '../blocs/recurring_cubit.dart';
 import '../models/transaction_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/summary_card.dart';
 import 'add_transaction_page.dart';
+import 'statistics_page.dart';
+import 'recurring_transactions_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,6 +20,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   String _filterType = 'Semua'; // Semua, Pemasukan, Pengeluaran
+  String _dateFilter = 'Semua'; // Semua, Hari Ini, Minggu Ini, Bulan Ini
 
   @override
   void dispose() {
@@ -36,8 +40,38 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Money Tracker'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.repeat_on_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const RecurringTransactionsPage(),
+                ),
+              );
+            },
+          ),
+          BlocBuilder<TransactionCubit, List<TransactionModel>>(
+            builder: (context, transactions) {
+              return IconButton(
+                icon: const Icon(Icons.bar_chart_rounded),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          StatisticsPage(transactions: transactions),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<TransactionCubit>().load(),
+            onPressed: () {
+              context.read<TransactionCubit>().load();
+              context.read<RecurringCubit>().load();
+            },
           ),
         ],
       ),
@@ -56,6 +90,7 @@ class _HomePageState extends State<HomePage> {
           ),
           child: BlocBuilder<TransactionCubit, List<TransactionModel>>(
             builder: (context, allTransactions) {
+              final now = DateTime.now();
               // Apply filtering and search
               final transactions = allTransactions.where((trx) {
                 final matchesSearch = trx.title.toLowerCase().contains(
@@ -65,7 +100,29 @@ class _HomePageState extends State<HomePage> {
                     _filterType == 'Semua' ||
                     (_filterType == 'Pemasukan' && trx.type == 'income') ||
                     (_filterType == 'Pengeluaran' && trx.type == 'expense');
-                return matchesSearch && matchesFilter;
+
+                bool matchesDate = true;
+                if (_dateFilter == 'Hari Ini') {
+                  matchesDate =
+                      trx.date.day == now.day &&
+                      trx.date.month == now.month &&
+                      trx.date.year == now.year;
+                } else if (_dateFilter == 'Minggu Ini') {
+                  final startOfWeek = now.subtract(
+                    Duration(days: now.weekday - 1),
+                  );
+                  final endOfWeek = startOfWeek.add(const Duration(days: 6));
+                  matchesDate =
+                      trx.date.isAfter(
+                        startOfWeek.subtract(const Duration(days: 1)),
+                      ) &&
+                      trx.date.isBefore(endOfWeek.add(const Duration(days: 1)));
+                } else if (_dateFilter == 'Bulan Ini') {
+                  matchesDate =
+                      trx.date.month == now.month && trx.date.year == now.year;
+                }
+
+                return matchesSearch && matchesFilter && matchesDate;
               }).toList();
 
               return Column(
@@ -125,6 +182,21 @@ class _HomePageState extends State<HomePage> {
                                     _buildFilterChip('Pemasukan'),
                                     const SizedBox(width: 8),
                                     _buildFilterChip('Pengeluaran'),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    _buildDateFilterChip('Semua'),
+                                    const SizedBox(width: 8),
+                                    _buildDateFilterChip('Hari Ini'),
+                                    const SizedBox(width: 8),
+                                    _buildDateFilterChip('Minggu Ini'),
+                                    const SizedBox(width: 8),
+                                    _buildDateFilterChip('Bulan Ini'),
                                   ],
                                 ),
                               ),
@@ -263,8 +335,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildFilterChip(String label) {
     final isSelected = _filterType == label;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
@@ -275,13 +345,32 @@ class _HomePageState extends State<HomePage> {
           });
         }
       },
-      selectedColor: colorScheme.primaryContainer,
+      selectedColor: Theme.of(context).colorScheme.primary,
       labelStyle: TextStyle(
-        color: isSelected ? colorScheme.primary : Colors.grey.shade600,
+        color: isSelected ? Colors.white : Colors.black87,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
-      backgroundColor: Colors.grey.shade100,
-      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    );
+  }
+
+  Widget _buildDateFilterChip(String label) {
+    final isSelected = _dateFilter == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _dateFilter = label;
+          });
+        }
+      },
+      selectedColor: Theme.of(context).colorScheme.secondary,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }

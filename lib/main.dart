@@ -4,8 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:money_tracker/blocs/transaction_cubit.dart';
+import 'package:money_tracker/blocs/recurring_cubit.dart';
 import 'package:money_tracker/models/transaction_model.dart';
+import 'package:money_tracker/models/recurring_transaction_model.dart';
 import 'package:money_tracker/services/hive_service.dart';
+import 'package:money_tracker/services/notification_service.dart';
 import 'package:money_tracker/views/home_page.dart';
 
 void main() async {
@@ -14,8 +17,12 @@ void main() async {
   await initializeDateFormatting('id_ID', null);
   await Hive.initFlutter();
   Hive.registerAdapter(TransactionModelAdapter());
+  Hive.registerAdapter(RecurringTransactionModelAdapter());
 
   await Hive.openBox<TransactionModel>('transactions');
+  await Hive.openBox<RecurringTransactionModel>('recurring_transactions');
+
+  await NotificationService.initialize();
 
   runApp(const MyApp());
 }
@@ -25,8 +32,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => TransactionCubit(HiveService())..load(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => TransactionCubit(HiveService())..load(),
+        ),
+        BlocProvider(
+          create: (context) => RecurringCubit(HiveService())..load(),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Money Tracker',

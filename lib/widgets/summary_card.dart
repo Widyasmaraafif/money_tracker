@@ -74,85 +74,42 @@ class SummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          // Progress bar for expense ratio
-          if (totalIncome > 0) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Rasio Pengeluaran',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withOpacity(0.7),
-                  ),
-                ),
-                Text(
-                  '${(expenseRatio * 100).toStringAsFixed(1)}%',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: expenseRatio.clamp(0.0, 1.0),
-                backgroundColor: Colors.white.withOpacity(0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  expenseRatio > 0.8 ? Colors.redAccent : Colors.white70,
-                ),
-                minHeight: 6,
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildSimpleSummary(
-                    label: 'Pemasukan',
-                    amount: totalIncome,
-                    icon: Icons.arrow_downward,
-                    color: Colors.greenAccent.shade400,
-                  ),
-                ),
-                Container(
-                  height: 32,
-                  width: 1,
-                  color: Colors.white.withOpacity(0.2),
-                ),
-                Expanded(
-                  child: _buildSimpleSummary(
-                    label: 'Pengeluaran',
-                    amount: totalExpense,
-                    icon: Icons.arrow_upward,
-                    color: Colors.orangeAccent.shade200,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildMethodSummary(
-                label: 'Tunai',
-                amount: cashBalance,
-                icon: Icons.wallet_outlined,
+              _buildSimpleStat(
+                context,
+                'Tunai',
+                currencyFormat.format(cashBalance),
+                Icons.wallet_rounded,
+                Colors.orangeAccent,
               ),
-              _buildMethodSummary(
-                label: 'Bank',
-                amount: bankBalance,
-                icon: Icons.account_balance_outlined,
+              const SizedBox(width: 16),
+              _buildSimpleStat(
+                context,
+                'Bank',
+                currencyFormat.format(bankBalance),
+                Icons.account_balance_rounded,
+                Colors.lightBlueAccent,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildStat(
+                context,
+                'Pemasukan',
+                currencyFormat.format(totalIncome),
+                Icons.arrow_downward_rounded,
+                Colors.greenAccent,
+              ),
+              const SizedBox(width: 16),
+              _buildStat(
+                context,
+                'Pengeluaran',
+                currencyFormat.format(totalExpense),
+                Icons.arrow_upward_rounded,
+                Colors.redAccent,
               ),
             ],
           ),
@@ -161,73 +118,92 @@ class SummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMethodSummary({
-    required String label,
-    required double amount,
-    required IconData icon,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: Colors.white70),
-        const SizedBox(width: 4),
-        Text(
-          '$label: ',
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+  Widget _buildSimpleStat(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
         ),
-        Text(
-          NumberFormat.currency(
-            locale: 'id_ID',
-            symbol: 'Rp',
-            decimalDigits: 0,
-          ).format(amount),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSimpleSummary({
-    required String label,
-    required double amount,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Icon(icon, color: color, size: 16),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 12,
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Colors.white.withOpacity(0.6),
+                    ),
+                  ),
+                  Text(
+                    value.replaceAll('Rp ', ''),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        FittedBox(
-          child: Text(
-            NumberFormat.currency(
-              locale: 'id_ID',
-              symbol: 'Rp ',
-              decimalDigits: 0,
-            ).format(amount),
-            style: const TextStyle(
+      ),
+    );
+  }
+
+  Widget _buildStat(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
