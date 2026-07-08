@@ -16,7 +16,11 @@ class NotificationService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings();
+        DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const InitializationSettings initializationSettings =
         InitializationSettings(
@@ -31,6 +35,14 @@ class NotificationService {
             // Handle notification tap
           },
     );
+
+    // Request Android notification permission
+    final androidPlatform = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlatform?.requestNotificationsPermission();
+    await androidPlatform?.requestExactAlarmsPermission();
   }
 
   static Future<void> scheduleReminder(
@@ -52,26 +64,31 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    await _notificationsPlugin.zonedSchedule(
-      notificationId,
-      'Reminder: ${trx.title}',
-      'Jangan lupa catat transaksi ${trx.title} sebesar ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(trx.amount)}',
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'recurring_transaction_channel',
-          'Transaksi Rutin',
-          channelDescription: 'Reminder untuk transaksi rutin',
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        notificationId,
+        'Reminder: ${trx.title}',
+        'Jangan lupa catat transaksi ${trx.title} sebesar ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(trx.amount)}',
+        tz.TZDateTime.from(scheduledDate, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'recurring_transaction_channel',
+            'Transaksi Rutin',
+            channelDescription: 'Reminder untuk transaksi rutin',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: _getDateTimeComponents(trx.recurrenceType),
-    );
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: _getDateTimeComponents(trx.recurrenceType),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error scheduling notification: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   static DateTimeComponents? _getDateTimeComponents(
@@ -90,10 +107,18 @@ class NotificationService {
   }
 
   static Future<void> cancelReminder(int notificationId) async {
-    await _notificationsPlugin.cancel(notificationId);
+    try {
+      await _notificationsPlugin.cancel(notificationId);
+    } catch (e) {
+      debugPrint('Error canceling reminder: $e');
+    }
   }
 
   static Future<void> cancelAllReminders() async {
-    await _notificationsPlugin.cancelAll();
+    try {
+      await _notificationsPlugin.cancelAll();
+    } catch (e) {
+      debugPrint('Error canceling all reminders: $e');
+    }
   }
 }

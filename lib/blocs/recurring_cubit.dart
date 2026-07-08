@@ -11,9 +11,11 @@ class RecurringCubit extends Cubit<List<RecurringTransactionModel>> {
     emit(service.getAllRecurring());
   }
 
-  void add(RecurringTransactionModel trx) {
+  int add(RecurringTransactionModel trx) {
+    final currentLength = state.length;
     service.addRecurring(trx);
     load();
+    return currentLength;
   }
 
   void delete(int index) {
@@ -29,6 +31,21 @@ class RecurringCubit extends Cubit<List<RecurringTransactionModel>> {
   void markAsOccurred(int index) {
     final trx = state[index];
     trx.updateNextOccurrence();
-    update(index, trx);
+    
+    // Check if we need to deactivate (past end date)
+    if (trx.endDate != null && trx.nextOccurrence.isAfter(trx.endDate!)) {
+      trx.isActive = false;
+    }
+    
+    // Save using HiveObject's built-in save method (safer)
+    trx.save();
+    load();
+  }
+
+  void toggleActive(int index) {
+    final trx = state[index];
+    trx.isActive = !trx.isActive;
+    trx.save();
+    load();
   }
 }

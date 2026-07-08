@@ -24,6 +24,42 @@ void main() async {
 
   await NotificationService.initialize();
 
+  // Auto-check recurring transactions
+  final hiveService = HiveService();
+  final recurringTransactions = hiveService.getAllRecurring();
+  final now = DateTime.now();
+  
+  for (var i = 0; i < recurringTransactions.length; i++) {
+    final trx = recurringTransactions[i];
+    if (trx.isActive && trx.nextOccurrence.isBefore(now)) {
+      // Add to regular transactions
+      final regularTrx = TransactionModel(
+        title: trx.title,
+        amount: trx.amount,
+        type: trx.type,
+        date: trx.nextOccurrence,
+        category: trx.category,
+        paymentMethod: trx.paymentMethod,
+      );
+      hiveService.add(regularTrx);
+      
+      // Update next occurrence
+      trx.updateNextOccurrence();
+      
+      // Check if we need to deactivate (past end date)
+      if (trx.endDate != null && trx.nextOccurrence.isAfter(trx.endDate!)) {
+        trx.isActive = false;
+      }
+      
+      hiveService.updateRecurring(i, trx);
+      
+      // Reschedule notification if needed
+      if (trx.hasReminder && trx.isActive) {
+        await NotificationService.scheduleReminder(trx, i + 1000);
+      }
+    }
+  }
+
   runApp(const MyApp());
 }
 

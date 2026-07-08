@@ -92,17 +92,35 @@ class RecurringTransactionModel extends HiveObject {
         nextOccurrence = nextOccurrence.add(const Duration(days: 7));
         break;
       case RecurrenceType.monthly:
+        // Handle month increment with day overflow
+        final nextMonth = DateTime(
+          nextOccurrence.year,
+          nextOccurrence.month + 2,
+          0,
+        );
+        final day = nextOccurrence.day > nextMonth.day
+            ? nextMonth.day
+            : nextOccurrence.day;
         nextOccurrence = DateTime(
           nextOccurrence.year,
           nextOccurrence.month + 1,
-          nextOccurrence.day,
+          day,
         );
         break;
       case RecurrenceType.yearly:
+        // Handle leap year for February 29
+        final nextYear = nextOccurrence.year + 1;
+        final isLeap = (nextYear % 4 == 0 && nextYear % 100 != 0) ||
+            (nextYear % 400 == 0);
+        final day = (nextOccurrence.month == 2 &&
+                nextOccurrence.day == 29 &&
+                !isLeap)
+            ? 28
+            : nextOccurrence.day;
         nextOccurrence = DateTime(
-          nextOccurrence.year + 1,
+          nextYear,
           nextOccurrence.month,
-          nextOccurrence.day,
+          day,
         );
         break;
     }

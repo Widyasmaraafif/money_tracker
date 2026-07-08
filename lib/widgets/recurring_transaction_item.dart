@@ -9,6 +9,7 @@ class RecurringTransactionItem extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
   final VoidCallback? onMarkOccurred;
+  final VoidCallback? onToggleActive;
 
   const RecurringTransactionItem({
     super.key,
@@ -17,6 +18,7 @@ class RecurringTransactionItem extends StatelessWidget {
     this.onTap,
     this.onDelete,
     this.onMarkOccurred,
+    this.onToggleActive,
   });
 
   @override
@@ -143,44 +145,72 @@ class RecurringTransactionItem extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Icon(
                 Icons.calendar_today_rounded,
                 size: 16,
                 color: Colors.grey.shade500,
               ),
-              const SizedBox(width: 4),
-              Text(
-                'Selanjutnya: ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.nextOccurrence)}',
-                style: textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade500,
+              Flexible(
+                child: Text(
+                  'Selanjutnya: ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.nextOccurrence)}',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (transaction.hasReminder) ...[
-                const SizedBox(width: 16),
+              if (transaction.hasReminder)
                 Icon(
                   Icons.notifications_active_rounded,
                   size: 16,
                   color: colorScheme.primary,
                 ),
-              ],
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.check_circle_outline_rounded),
-                color: Colors.green.shade600,
-                onPressed: onMarkOccurred,
-                tooltip: 'Tandai Telah Terjadi',
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                color: colorScheme.primary,
-                onPressed: onTap,
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded),
-                color: Colors.red.shade600,
-                onPressed: onDelete,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (transaction.isActive)
+                    IconButton(
+                      icon: const Icon(Icons.check_circle_outline_rounded),
+                      color: Colors.green.shade600,
+                      onPressed: onMarkOccurred,
+                      tooltip: 'Tandai Telah Terjadi',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      transaction.isActive
+                          ? Icons.pause_circle_outline_rounded
+                          : Icons.play_circle_outline_rounded,
+                    ),
+                    color: transaction.isActive
+                        ? Colors.orange.shade600
+                        : Colors.green.shade600,
+                    onPressed: onToggleActive,
+                    tooltip: transaction.isActive ? 'Nonaktifkan' : 'Aktifkan',
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    color: colorScheme.primary,
+                    onPressed: onTap,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    color: Colors.red.shade600,
+                    onPressed: onDelete,
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ],
               ),
             ],
           ),

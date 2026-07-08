@@ -122,6 +122,9 @@ class _RecurringTransactionsPageState extends State<RecurringTransactionsPage> {
                                   _showMarkOccurredDialog(
                                       context, transaction, index);
                                 },
+                                onToggleActive: () {
+                                  context.read<RecurringCubit>().toggleActive(index);
+                                },
                               );
                             },
                           ),

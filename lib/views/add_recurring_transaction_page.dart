@@ -30,6 +30,7 @@ class _AddRecurringTransactionPageState
   late RecurrenceType _recurrenceType;
   bool _hasReminder = false;
   TimeOfDay? _reminderTime;
+  late DateTime _nextOccurrence;
 
   @override
   void initState() {
@@ -49,6 +50,7 @@ class _AddRecurringTransactionPageState
         widget.transaction?.recurrenceType ?? RecurrenceType.monthly;
     _hasReminder = widget.transaction?.hasReminder ?? false;
     _reminderTime = widget.transaction?.reminderTime;
+    _nextOccurrence = widget.transaction?.nextOccurrence ?? _startDate;
   }
 
   @override
@@ -123,6 +125,7 @@ class _AddRecurringTransactionPageState
           ),
         ),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 40),
           child: Column(
             children: [
               const SizedBox(height: kToolbarHeight + 40),
@@ -421,7 +424,7 @@ class _AddRecurringTransactionPageState
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
+                                      horizontal: 12,
                                       vertical: 16,
                                     ),
                                     decoration: BoxDecoration(
@@ -436,14 +439,21 @@ class _AddRecurringTransactionPageState
                                           color: colorScheme.primary,
                                         ),
                                         const SizedBox(width: 12),
-                                        Text(
-                                          DateFormat(
-                                            'dd MMM yyyy',
-                                            'id_ID',
-                                          ).format(_startDate),
-                                          style: textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: const Color(0xFF1E293B),
+                                        Expanded(
+                                          child: Text(
+                                            DateFormat(
+                                              'dd MMM yyyy',
+                                              'id_ID',
+                                            ).format(_startDate),
+                                            style: textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(
+                                                    0xFF1E293B,
+                                                  ),
+                                                ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                       ],
@@ -459,7 +469,7 @@ class _AddRecurringTransactionPageState
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Tanggal Selesai (Opsional)',
+                                  'Tanggal Selesai',
                                   style: textTheme.labelLarge?.copyWith(
                                     color: const Color(0xFF64748B),
                                     fontWeight: FontWeight.bold,
@@ -471,7 +481,7 @@ class _AddRecurringTransactionPageState
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
+                                      horizontal: 12,
                                       vertical: 16,
                                     ),
                                     decoration: BoxDecoration(
@@ -486,18 +496,23 @@ class _AddRecurringTransactionPageState
                                           color: colorScheme.primary,
                                         ),
                                         const SizedBox(width: 12),
-                                        Text(
-                                          _endDate != null
-                                              ? DateFormat(
-                                                  'dd MMM yyyy',
-                                                  'id_ID',
-                                                ).format(_endDate!)
-                                              : 'Pilih Tanggal',
-                                          style: textTheme.bodyMedium?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                            color: _endDate != null
-                                                ? const Color(0xFF1E293B)
-                                                : Colors.grey.shade400,
+                                        Expanded(
+                                          child: Text(
+                                            _endDate != null
+                                                ? DateFormat(
+                                                    'dd MMM yyyy',
+                                                    'id_ID',
+                                                  ).format(_endDate!)
+                                                : 'Pilih Tanggal',
+                                            style: textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: _endDate != null
+                                                      ? const Color(0xFF1E293B)
+                                                      : Colors.grey.shade400,
+                                                ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                       ],
@@ -537,7 +552,7 @@ class _AddRecurringTransactionPageState
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
+                              horizontal: 12,
                               vertical: 16,
                             ),
                             decoration: BoxDecoration(
@@ -552,13 +567,17 @@ class _AddRecurringTransactionPageState
                                   color: colorScheme.primary,
                                 ),
                                 const SizedBox(width: 12),
-                                Text(
-                                  _reminderTime != null
-                                      ? _reminderTime!.format(context)
-                                      : 'Pilih Waktu',
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF1E293B),
+                                Expanded(
+                                  child: Text(
+                                    _reminderTime != null
+                                        ? _reminderTime!.format(context)
+                                        : 'Pilih Waktu',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF1E293B),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                 ),
                               ],
@@ -570,53 +589,65 @@ class _AddRecurringTransactionPageState
                       ElevatedButton(
                         onPressed: () async {
                           if (_formKey.currentState!.validate()) {
-                            // Create transaction and use the setter if needed
-                            final transaction = RecurringTransactionModel(
-                              title: _titleController.text,
-                              amount: double.parse(_amountController.text),
-                              type: _type,
-                              category: _category,
-                              paymentMethod: _paymentMethod,
-                              recurrenceType: _recurrenceType,
-                              startDate: _startDate,
-                              endDate: _endDate,
-                              nextOccurrence: _startDate,
-                              isActive: true,
-                              hasReminder: _hasReminder,
-                            );
-                            // Use the setter to handle conversion from TimeOfDay to DateTime
-                            transaction.reminderTime = _reminderTime;
-
-                            if (widget.transaction != null &&
-                                widget.index != null) {
-                              context.read<RecurringCubit>().update(
-                                widget.index!,
-                                transaction,
+                            try {
+                              // Create transaction and use the setter if needed
+                              final transaction = RecurringTransactionModel(
+                                title: _titleController.text,
+                                amount: double.parse(_amountController.text),
+                                type: _type,
+                                category: _category,
+                                paymentMethod: _paymentMethod,
+                                recurrenceType: _recurrenceType,
+                                startDate: _startDate,
+                                endDate: _endDate,
+                                nextOccurrence: _nextOccurrence,
+                                isActive: widget.transaction?.isActive ?? true,
+                                hasReminder: _hasReminder,
                               );
-                              if (_hasReminder) {
-                                await NotificationService.scheduleReminder(
+                              // Use the setter to handle conversion from TimeOfDay to DateTime
+                              transaction.reminderTime = _reminderTime;
+
+                              if (widget.transaction != null &&
+                                  widget.index != null) {
+                                context.read<RecurringCubit>().update(
+                                  widget.index!,
                                   transaction,
-                                  widget.index! + 1000,
                                 );
+                                if (_hasReminder) {
+                                  await NotificationService.scheduleReminder(
+                                    transaction,
+                                    widget.index! + 1000,
+                                  );
+                                } else {
+                                  await NotificationService.cancelReminder(
+                                    widget.index! + 1000,
+                                  );
+                                }
                               } else {
-                                await NotificationService.cancelReminder(
-                                  widget.index! + 1000,
+                                final index = context
+                                    .read<RecurringCubit>()
+                                    .add(transaction);
+                                if (_hasReminder) {
+                                  await NotificationService.scheduleReminder(
+                                    transaction,
+                                    index + 1000,
+                                  );
+                                }
+                              }
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                              }
+                            } catch (e, stackTrace) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
                                 );
                               }
-                            } else {
-                              context.read<RecurringCubit>().add(transaction);
-                              final index =
-                                  context.read<RecurringCubit>().state.length -
-                                  1;
-                              if (_hasReminder) {
-                                await NotificationService.scheduleReminder(
-                                  transaction,
-                                  index + 1000,
-                                );
-                              }
-                            }
-                            if (context.mounted) {
-                              Navigator.pop(context);
+                              debugPrint('Error saving transaction: $e');
+                              debugPrintStack(stackTrace: stackTrace);
                             }
                           }
                         },
