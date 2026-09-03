@@ -123,7 +123,7 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 return matchesSearch && matchesFilter && matchesDate;
-              }).toList();
+              }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
               return Column(
                 children: [

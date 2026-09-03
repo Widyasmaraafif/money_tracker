@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
 import '../utils/categories.dart';
@@ -28,9 +29,8 @@ class TransactionItem extends StatelessWidget {
 
     final category = TransactionCategory.getByName(transaction.category);
 
-    return InkWell(
+    final tile = InkWell(
       onTap: onTap,
-      onLongPress: onDelete,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
@@ -120,17 +120,94 @@ class TransactionItem extends StatelessWidget {
                 ),
               ],
             ),
-            if (onDelete != null) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: onDelete,
-                tooltip: 'Hapus transaksi',
-              ),
-            ],
           ],
         ),
       ),
+    );
+
+    if (onDelete == null) return tile;
+
+    return Dismissible(
+      key: ValueKey(transaction.key ?? Object()),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_rounded, color: Colors.red.shade700, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              'Hapus',
+              style: textTheme.labelSmall?.copyWith(
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        HapticFeedback.mediumImpact();
+        bool confirm = false;
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.delete_outline_rounded, color: Colors.red),
+                SizedBox(width: 12),
+                Text('Hapus Transaksi?'),
+              ],
+            ),
+            content: Text(
+              'Apakah Anda yakin ingin menghapus "${transaction.title}"?\nTindakan ini tidak dapat dibatalkan.',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  confirm = false;
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  confirm = true;
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade50,
+                  foregroundColor: Colors.red,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Hapus'),
+              ),
+            ],
+          ),
+        );
+        return confirm;
+      },
+      onDismissed: (direction) {
+        onDelete?.call();
+      },
+      child: tile,
     );
   }
 }
