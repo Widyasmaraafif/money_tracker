@@ -3,12 +3,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/transaction_cubit.dart';
 import '../blocs/recurring_cubit.dart';
+import '../blocs/budget_cubit.dart';
 import '../models/transaction_model.dart';
+import '../models/budget_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/summary_card.dart';
 import 'add_transaction_page.dart';
 import 'statistics_page.dart';
 import 'recurring_transactions_page.dart';
+import 'budgets_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -41,12 +44,23 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.repeat_on_rounded),
+            tooltip: 'Transaksi Rutin',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const RecurringTransactionsPage(),
                 ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.savings_outlined),
+            tooltip: 'Anggaran',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BudgetsPage()),
               );
             },
           ),
@@ -71,6 +85,7 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               context.read<TransactionCubit>().load();
               context.read<RecurringCubit>().load();
+              context.read<BudgetCubit>().load();
             },
           ),
         ],
@@ -129,7 +144,9 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: kToolbarHeight + 16),
                   SummaryCard(transactions: allTransactions),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  _buildBudgetAlert(context, allTransactions),
+                  const SizedBox(height: 4),
                   Container(
                     width: double.infinity,
                     decoration: const BoxDecoration(
@@ -330,6 +347,92 @@ class _HomePageState extends State<HomePage> {
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildBudgetAlert(
+    BuildContext context,
+    List<TransactionModel> allTransactions,
+  ) {
+    final now = DateTime.now();
+    return BlocBuilder<BudgetCubit, List<BudgetModel>>(
+      builder: (context, budgets) {
+        final current = budgets
+            .where((b) => b.month == now.month && b.year == now.year)
+            .toList();
+
+        if (current.isEmpty) return const SizedBox.shrink();
+
+        int overCount = 0;
+        int nearCount = 0;
+        for (final b in current) {
+          if (b.limit <= 0) continue;
+          final p = b.spent(allTransactions) / b.limit;
+          if (p > 1.0) {
+            overCount++;
+          } else if (p >= 0.8) {
+            nearCount++;
+          }
+        }
+
+        if (overCount == 0 && nearCount == 0) {
+          return const SizedBox.shrink();
+        }
+
+        final isOver = overCount > 0;
+        final message = isOver
+            ? '$overCount anggaran terlampaui!'
+            : '$nearCount anggaran hampir habis (≥80%)';
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BudgetsPage()),
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isOver ? Colors.red.shade600 : Colors.orange.shade600,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isOver ? Colors.red : Colors.orange).withOpacity(
+                      0.3,
+                    ),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isOver ? Icons.warning_rounded : Icons.info_outline_rounded,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

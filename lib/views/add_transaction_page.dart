@@ -5,37 +5,7 @@ import 'package:intl/intl.dart';
 import '../blocs/transaction_cubit.dart';
 import '../models/transaction_model.dart';
 import '../utils/categories.dart';
-
-class CurrencyInputFormatter extends TextInputFormatter {
-  final NumberFormat _formatter = NumberFormat.currency(
-    locale: 'id_ID',
-    symbol: '',
-    decimalDigits: 0,
-  );
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    final value = int.tryParse(digits) ?? 0;
-    final formatted = _formatter.format(value).trim();
-
-    return newValue.copyWith(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
+import '../utils/currency_formatter.dart';
 
 class AddTransactionPage extends StatefulWidget {
   final TransactionModel? transaction;
@@ -56,20 +26,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   late String _category;
   late String _paymentMethod;
 
-  String _formatAmount(double amount) {
-    final formatter = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: '',
-      decimalDigits: 0,
-    );
-    return formatter.format(amount).trim();
-  }
-
-  double _parseAmount(String text) {
-    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
-    return double.tryParse(digits) ?? 0.0;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -78,7 +34,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
     _amountController = TextEditingController(
       text: widget.transaction != null
-          ? _formatAmount(widget.transaction!.amount)
+          ? formatAmount(widget.transaction!.amount)
           : '',
     );
     _type = widget.transaction?.type ?? 'expense';
@@ -246,7 +202,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           if (value == null || value.isEmpty) {
                             return 'Nominal tidak boleh kosong';
                           }
-                          final parsed = _parseAmount(value);
+                          final parsed = parseAmount(value);
                           if (parsed <= 0) {
                             return 'Masukkan nominal yang valid';
                           }
@@ -421,7 +377,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           if (_formKey.currentState!.validate()) {
                             final transaction = TransactionModel(
                               title: _titleController.text,
-                              amount: _parseAmount(_amountController.text),
+                              amount: parseAmount(_amountController.text),
                               type: _type,
                               date: _selectedDate,
                               category: _category,

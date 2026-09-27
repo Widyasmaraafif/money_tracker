@@ -5,8 +5,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:money_tracker/blocs/transaction_cubit.dart';
 import 'package:money_tracker/blocs/recurring_cubit.dart';
+import 'package:money_tracker/blocs/budget_cubit.dart';
 import 'package:money_tracker/models/transaction_model.dart';
 import 'package:money_tracker/models/recurring_transaction_model.dart';
+import 'package:money_tracker/models/budget_model.dart';
 import 'package:money_tracker/services/hive_service.dart';
 import 'package:money_tracker/services/notification_service.dart';
 import 'package:money_tracker/views/home_page.dart';
@@ -18,9 +20,11 @@ void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(TransactionModelAdapter());
   Hive.registerAdapter(RecurringTransactionModelAdapter());
+  Hive.registerAdapter(BudgetModelAdapter());
 
   await Hive.openBox<TransactionModel>('transactions');
   await Hive.openBox<RecurringTransactionModel>('recurring_transactions');
+  await Hive.openBox<BudgetModel>('budgets');
 
   await NotificationService.initialize();
 
@@ -28,7 +32,7 @@ void main() async {
   final hiveService = HiveService();
   final recurringTransactions = hiveService.getAllRecurring();
   final now = DateTime.now();
-  
+
   for (var i = 0; i < recurringTransactions.length; i++) {
     final trx = recurringTransactions[i];
     if (trx.isActive && trx.nextOccurrence.isBefore(now)) {
@@ -42,17 +46,17 @@ void main() async {
         paymentMethod: trx.paymentMethod,
       );
       hiveService.add(regularTrx);
-      
+
       // Update next occurrence
       trx.updateNextOccurrence();
-      
+
       // Check if we need to deactivate (past end date)
       if (trx.endDate != null && trx.nextOccurrence.isAfter(trx.endDate!)) {
         trx.isActive = false;
       }
-      
+
       hiveService.updateRecurring(i, trx);
-      
+
       // Reschedule notification if needed
       if (trx.hasReminder && trx.isActive) {
         await NotificationService.scheduleReminder(trx, i + 1000);
@@ -76,6 +80,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(
           create: (context) => RecurringCubit(HiveService())..load(),
         ),
+        BlocProvider(create: (context) => BudgetCubit(HiveService())..load()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
