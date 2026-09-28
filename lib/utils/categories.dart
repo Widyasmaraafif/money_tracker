@@ -48,6 +48,11 @@ class TransactionCategory {
       color: Colors.indigo,
     ),
     TransactionCategory(
+      name: 'Tabungan',
+      icon: Icons.savings_rounded,
+      color: Colors.cyan,
+    ),
+    TransactionCategory(
       name: 'Lainnya',
       icon: Icons.category_rounded,
       color: Colors.grey,
@@ -71,24 +76,31 @@ class TransactionCategory {
       color: Colors.amber,
     ),
     TransactionCategory(
+      name: 'Tabungan',
+      icon: Icons.savings_rounded,
+      color: Colors.cyan,
+    ),
+    TransactionCategory(
       name: 'Lainnya',
       icon: Icons.category_rounded,
       color: Colors.grey,
     ),
   ];
 
+  static const TransactionCategory fallback = TransactionCategory(
+    name: 'Lainnya',
+    icon: Icons.category_rounded,
+    color: Colors.grey,
+  );
+
+  static final Map<String, TransactionCategory> _byName = {
+    for (final c in [...expenseCategories, ...incomeCategories]) c.name: c,
+  };
+
   static List<TransactionCategory> getAll(String type) {
     return type == 'income' ? incomeCategories : expenseCategories;
   }
 
-  static TransactionCategory getByName(String name) {
-    return [...expenseCategories, ...incomeCategories].firstWhere(
-      (cat) => cat.name == name,
-      orElse: () => const TransactionCategory(
-        name: 'Lainnya',
-        icon: Icons.category_rounded,
-        color: Colors.grey,
-      ),
-    );
-  }
+  static TransactionCategory getByName(String name) =>
+      _byName[name] ?? fallback;
 }

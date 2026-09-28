@@ -6,9 +6,11 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:money_tracker/blocs/transaction_cubit.dart';
 import 'package:money_tracker/blocs/recurring_cubit.dart';
 import 'package:money_tracker/blocs/budget_cubit.dart';
+import 'package:money_tracker/blocs/saving_cubit.dart';
 import 'package:money_tracker/models/transaction_model.dart';
 import 'package:money_tracker/models/recurring_transaction_model.dart';
 import 'package:money_tracker/models/budget_model.dart';
+import 'package:money_tracker/models/saving_goal_model.dart';
 import 'package:money_tracker/services/hive_service.dart';
 import 'package:money_tracker/services/notification_service.dart';
 import 'package:money_tracker/views/home_page.dart';
@@ -16,55 +18,84 @@ import 'package:money_tracker/views/home_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await initializeDateFormatting('id_ID', null);
-  await Hive.initFlutter();
+  // Parallelize independent init work: locale data + Hive setup.
+  await Future.wait([
+    initializeDateFormatting('id_ID', null),
+    Hive.initFlutter(),
+  ]);
   Hive.registerAdapter(TransactionModelAdapter());
+  Hive.registerAdapter(RecurrenceTypeAdapter());
   Hive.registerAdapter(RecurringTransactionModelAdapter());
   Hive.registerAdapter(BudgetModelAdapter());
+  Hive.registerAdapter(SavingGoalModelAdapter());
 
-  await Hive.openBox<TransactionModel>('transactions');
-  await Hive.openBox<RecurringTransactionModel>('recurring_transactions');
-  await Hive.openBox<BudgetModel>('budgets');
+  // Open all boxes concurrently instead of sequentially.
+  await Future.wait([
+    Hive.openBox<TransactionModel>('transactions'),
+    Hive.openBox<RecurringTransactionModel>('recurring_transactions'),
+    Hive.openBox<BudgetModel>('budgets'),
+    Hive.openBox<SavingGoalModel>('savings'),
+  ]);
 
-  await NotificationService.initialize();
+  // Render first frame ASAP; notifications + recurring catch-up run after.
+  runApp(const MyApp());
 
-  // Auto-check recurring transactions
-  final hiveService = HiveService();
-  final recurringTransactions = hiveService.getAllRecurring();
-  final now = DateTime.now();
+  // Non-blocking: don't delay first frame on notification permission dialogs.
+  NotificationService.initialize().ignore();
+  _processDueRecurring();
+}
 
-  for (var i = 0; i < recurringTransactions.length; i++) {
-    final trx = recurringTransactions[i];
-    if (trx.isActive && trx.nextOccurrence.isBefore(now)) {
-      // Add to regular transactions
-      final regularTrx = TransactionModel(
-        title: trx.title,
-        amount: trx.amount,
-        type: trx.type,
-        date: trx.nextOccurrence,
-        category: trx.category,
-        paymentMethod: trx.paymentMethod,
-      );
-      hiveService.add(regularTrx);
+/// Catch up overdue recurring transactions in background (batched writes).
+Future<void> _processDueRecurring() async {
+  try {
+    final hiveService = HiveService();
+    final box = hiveService.recurringBox;
+    final now = DateTime.now();
+    final dueKeys = <int>[];
+    final newTransactions = <TransactionModel>[];
+    final reminders = <Future<void>>[];
 
-      // Update next occurrence
-      trx.updateNextOccurrence();
-
-      // Check if we need to deactivate (past end date)
-      if (trx.endDate != null && trx.nextOccurrence.isAfter(trx.endDate!)) {
-        trx.isActive = false;
+    for (final key in box.keys.cast<int>()) {
+      final trx = box.get(key);
+      if (trx == null || !trx.isActive || !trx.nextOccurrence.isBefore(now)) {
+        continue;
       }
-
-      hiveService.updateRecurring(i, trx);
-
-      // Reschedule notification if needed
+      // Catch up all missed occurrences, not just one.
+      var guard = 0;
+      while (trx.isActive &&
+          trx.nextOccurrence.isBefore(now) &&
+          guard++ < 366) {
+        newTransactions.add(
+          TransactionModel(
+            title: trx.title,
+            amount: trx.amount,
+            type: trx.type,
+            date: trx.nextOccurrence,
+            category: trx.category,
+            paymentMethod: trx.paymentMethod,
+          ),
+        );
+        trx.updateNextOccurrence();
+        if (trx.endDate != null && trx.nextOccurrence.isAfter(trx.endDate!)) {
+          trx.isActive = false;
+        }
+      }
+      dueKeys.add(key);
       if (trx.hasReminder && trx.isActive) {
-        await NotificationService.scheduleReminder(trx, i + 1000);
+        reminders.add(NotificationService.scheduleReminder(trx, key + 1000));
       }
     }
-  }
 
-  runApp(const MyApp());
+    if (newTransactions.isNotEmpty) {
+      await hiveService.addAll(newTransactions);
+    }
+    for (final key in dueKeys) {
+      await box.get(key)?.save();
+    }
+    await Future.wait(reminders);
+  } catch (_) {
+    // Background catch-up must never crash startup.
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -81,6 +112,7 @@ class MyApp extends StatelessWidget {
           create: (context) => RecurringCubit(HiveService())..load(),
         ),
         BlocProvider(create: (context) => BudgetCubit(HiveService())..load()),
+        BlocProvider(create: (context) => SavingCubit(HiveService())..load()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -102,7 +134,10 @@ class MyApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(
             centerTitle: true,
             backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
             elevation: 0,
+            iconTheme: IconThemeData(color: Colors.white),
+            actionsIconTheme: IconThemeData(color: Colors.white),
             titleTextStyle: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,

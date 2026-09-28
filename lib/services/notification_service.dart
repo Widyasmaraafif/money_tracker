@@ -8,9 +8,19 @@ import '../models/recurring_transaction_model.dart';
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  static bool _tzInitialized = false;
+  static Future<void>? _initFuture;
+
+  static Future<void> ensureInitialized() {
+    _initFuture ??= initialize();
+    return _initFuture!;
+  }
 
   static Future<void> initialize() async {
-    tz.initializeTimeZones();
+    if (!_tzInitialized) {
+      tz.initializeTimeZones();
+      _tzInitialized = true;
+    }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -36,13 +46,16 @@ class NotificationService {
           },
     );
 
-    // Request Android notification permission
-    final androidPlatform = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-    await androidPlatform?.requestNotificationsPermission();
-    await androidPlatform?.requestExactAlarmsPermission();
+    // Request Android notification permission (never throw from init).
+    try {
+      final androidPlatform = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      await androidPlatform?.requestNotificationsPermission();
+    } catch (_) {
+      // Permission request must not break saving/app flow.
+    }
   }
 
   static Future<void> scheduleReminder(
@@ -50,6 +63,7 @@ class NotificationService {
     int notificationId,
   ) async {
     if (!trx.hasReminder || trx.reminderDateTime == null) return;
+    await ensureInitialized();
 
     final now = DateTime.now();
     var scheduledDate = DateTime(
@@ -80,7 +94,9 @@ class NotificationService {
           ),
           iOS: DarwinNotificationDetails(),
         ),
-        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        // Inexact mode: alarmClock needs exact-alarm permission and throws
+        // (ExactAlarmNotPermitted) when not granted, even though caught.
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: _getDateTimeComponents(trx.recurrenceType),

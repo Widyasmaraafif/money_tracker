@@ -5,6 +5,55 @@ part 'recurring_transaction_model.g.dart';
 
 enum RecurrenceType { daily, weekly, monthly, yearly }
 
+class RecurrenceTypeAdapter extends TypeAdapter<RecurrenceType> {
+  @override
+  final int typeId = 3;
+
+  @override
+  RecurrenceType read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return RecurrenceType.daily;
+      case 1:
+        return RecurrenceType.weekly;
+      case 2:
+        return RecurrenceType.monthly;
+      case 3:
+        return RecurrenceType.yearly;
+      default:
+        return RecurrenceType.monthly;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, RecurrenceType obj) {
+    switch (obj) {
+      case RecurrenceType.daily:
+        writer.writeByte(0);
+        break;
+      case RecurrenceType.weekly:
+        writer.writeByte(1);
+        break;
+      case RecurrenceType.monthly:
+        writer.writeByte(2);
+        break;
+      case RecurrenceType.yearly:
+        writer.writeByte(3);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RecurrenceTypeAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
 @HiveType(typeId: 1)
 class RecurringTransactionModel extends HiveObject {
   @HiveField(0)
@@ -110,18 +159,13 @@ class RecurringTransactionModel extends HiveObject {
       case RecurrenceType.yearly:
         // Handle leap year for February 29
         final nextYear = nextOccurrence.year + 1;
-        final isLeap = (nextYear % 4 == 0 && nextYear % 100 != 0) ||
-            (nextYear % 400 == 0);
-        final day = (nextOccurrence.month == 2 &&
-                nextOccurrence.day == 29 &&
-                !isLeap)
+        final isLeap =
+            (nextYear % 4 == 0 && nextYear % 100 != 0) || (nextYear % 400 == 0);
+        final day =
+            (nextOccurrence.month == 2 && nextOccurrence.day == 29 && !isLeap)
             ? 28
             : nextOccurrence.day;
-        nextOccurrence = DateTime(
-          nextYear,
-          nextOccurrence.month,
-          day,
-        );
+        nextOccurrence = DateTime(nextYear, nextOccurrence.month, day);
         break;
     }
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import '../models/transaction_model.dart';
 import '../utils/categories.dart';
+import '../utils/currency_formatter.dart';
 
 class TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
@@ -19,12 +19,6 @@ class TransactionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = transaction.type == 'income';
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
     final category = TransactionCategory.getByName(transaction.category);
@@ -83,7 +77,7 @@ class TransactionItem extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${transaction.category} • ${DateFormat('dd MMM yyyy', 'id_ID').format(transaction.date)}',
+                          '${transaction.category} • ${dayMonthYearId.format(transaction.date)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall?.copyWith(
@@ -102,7 +96,7 @@ class TransactionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'} ${currencyFormat.format(transaction.amount).replaceAll('Rp ', '')}',
+                  '${isIncome ? '+' : '-'} ${formatPlain(transaction.amount)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleMedium?.copyWith(

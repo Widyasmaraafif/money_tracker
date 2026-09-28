@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import '../blocs/transaction_cubit.dart';
 import '../blocs/recurring_cubit.dart';
 import '../blocs/budget_cubit.dart';
+import '../blocs/saving_cubit.dart';
 import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../widgets/transaction_item.dart';
@@ -12,6 +12,7 @@ import 'add_transaction_page.dart';
 import 'statistics_page.dart';
 import 'recurring_transactions_page.dart';
 import 'budgets_page.dart';
+import 'savings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,10 +38,25 @@ class _HomePageState extends State<HomePage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('Money Tracker'),
+        centerTitle: false,
+        titleSpacing: 20,
+        scrolledUnderElevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary,
+                colorScheme.primary.withOpacity(0.8),
+                colorScheme.secondary.withOpacity(0.6),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.repeat_on_rounded),
@@ -64,6 +80,16 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: 'Tabungan',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SavingsPage()),
+              );
+            },
+          ),
           BlocBuilder<TransactionCubit, List<TransactionModel>>(
             builder: (context, transactions) {
               return IconButton(
@@ -80,29 +106,23 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<TransactionCubit>().load();
-              context.read<RecurringCubit>().load();
-              context.read<BudgetCubit>().load();
-            },
-          ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary,
-                colorScheme.primary.withOpacity(0.8),
-                colorScheme.secondary.withOpacity(0.6),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.primary,
+              colorScheme.primary.withOpacity(0.8),
+              colorScheme.secondary.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+        ),
+        child: SafeArea(
+          top: false,
+          bottom: false,
           child: BlocBuilder<TransactionCubit, List<TransactionModel>>(
             builder: (context, allTransactions) {
               final now = DateTime.now();
@@ -140,195 +160,308 @@ class _HomePageState extends State<HomePage> {
                 return matchesSearch && matchesFilter && matchesDate;
               }).toList()..sort((a, b) => b.date.compareTo(a.date));
 
-              return Column(
-                children: [
-                  const SizedBox(height: kToolbarHeight + 16),
-                  SummaryCard(transactions: allTransactions),
-                  const SizedBox(height: 12),
-                  _buildBudgetAlert(context, allTransactions),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(32),
-                        topRight: Radius.circular(32),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 10,
-                          offset: Offset(0, -5),
-                        ),
-                      ],
+              final hasActiveFilter =
+                  _searchController.text.isNotEmpty ||
+                  _filterType != 'Semua' ||
+                  _dateFilter != 'Semua';
+
+              return RefreshIndicator(
+                // Baru refresh setelah ditarik melewati 100px.
+                displacement: 100,
+                edgeOffset: 0,
+                triggerMode: RefreshIndicatorTriggerMode.anywhere,
+                onRefresh: () async {
+                  context.read<TransactionCubit>().load();
+                  context.read<RecurringCubit>().load();
+                  context.read<BudgetCubit>().load();
+                  context.read<SavingCubit>().load();
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    SliverToBoxAdapter(
+                      child: SummaryCard(transactions: allTransactions),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Search and Filter Bar
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    SliverToBoxAdapter(
+                      child: _buildBudgetAlert(context, allTransactions),
+                    ),
+                    // Pinned filter header: stays visible while the list scrolls.
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _FilterHeaderDelegate(
+                        minHeight: 196,
+                        maxHeight: 196,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(32),
+                              topRight: Radius.circular(32),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 10,
+                                offset: Offset(0, -5),
+                              ),
+                            ],
+                          ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.max,
                             children: [
-                              TextField(
-                                controller: _searchController,
-                                decoration: InputDecoration(
-                                  hintText: 'Cari transaksi...',
-                                  prefixIcon: const Icon(Icons.search),
-                                  filled: true,
-                                  fillColor: Colors.grey.shade100,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 0,
-                                    horizontal: 16,
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  12,
+                                  20,
+                                  0,
+                                ),
+                                child: SizedBox(
+                                  height: 48,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    textInputAction: TextInputAction.search,
+                                    decoration: InputDecoration(
+                                      hintText: 'Cari transaksi...',
+                                      prefixIcon: const Icon(
+                                        Icons.search,
+                                        size: 22,
+                                      ),
+                                      suffixIcon:
+                                          _searchController.text.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(
+                                                Icons.clear,
+                                                size: 20,
+                                              ),
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() {});
+                                              },
+                                            )
+                                          : null,
+                                      filled: true,
+                                      fillColor: Colors.grey.shade100,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 16,
+                                          ),
+                                    ),
+                                    onChanged: (value) => setState(() {}),
                                   ),
                                 ),
-                                onChanged: (value) => setState(() {}),
                               ),
                               const SizedBox(height: 12),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
                                 child: Row(
                                   children: [
-                                    _buildFilterChip('Semua'),
-                                    const SizedBox(width: 8),
-                                    _buildFilterChip('Pemasukan'),
-                                    const SizedBox(width: 8),
-                                    _buildFilterChip('Pengeluaran'),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: [
-                                    _buildDateFilterChip('Semua'),
-                                    const SizedBox(width: 8),
-                                    _buildDateFilterChip('Hari Ini'),
-                                    const SizedBox(width: 8),
-                                    _buildDateFilterChip('Minggu Ini'),
-                                    const SizedBox(width: 8),
-                                    _buildDateFilterChip('Bulan Ini'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Transaksi',
-                                style: textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1E293B),
-                                ),
-                              ),
-                              if (transactions.isNotEmpty)
-                                Text(
-                                  '${transactions.length} ditemukan',
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey.shade500,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.5,
-                          child: transactions.isEmpty
-                              ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.receipt_long_outlined,
-                                        size: 80,
-                                        color: Colors.grey.shade200,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        _searchController.text.isNotEmpty ||
-                                                _filterType != 'Semua'
-                                            ? 'Tidak ada transaksi yang sesuai'
-                                            : 'Belum ada transaksi',
-                                        style: textTheme.titleMedium?.copyWith(
-                                          color: Colors.grey.shade400,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Mulai catat keuanganmu hari ini!',
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey.shade400,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : ListView.separated(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 16,
-                                  ),
-                                  itemCount: transactions.length,
-                                  separatorBuilder: (context, index) =>
-                                      const Divider(
-                                        height: 1,
-                                        indent: 80,
-                                        endIndent: 24,
-                                        color: Color(0xFFF1F5F9),
-                                      ),
-                                  itemBuilder: (context, index) {
-                                    final transaction = transactions[index];
-                                    return TransactionItem(
-                                      transaction: transaction,
-                                      onTap: () async {
-                                        final cubit = context
-                                            .read<TransactionCubit>();
-                                        final allTransactions = cubit.state;
-                                        final actualIndex = allTransactions
-                                            .indexOf(transaction);
-
-                                        if (actualIndex != -1) {
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  AddTransactionPage(
-                                                    transaction: transaction,
-                                                    index: actualIndex,
-                                                  ),
-                                            ),
-                                          );
-                                          if (context.mounted) {
-                                            context
-                                                .read<TransactionCubit>()
-                                                .load();
+                                    Expanded(
+                                      child: _buildDropdown(
+                                        value: _filterType,
+                                        prefixIcon: Icons.swap_vert_rounded,
+                                        items: const [
+                                          'Semua',
+                                          'Pemasukan',
+                                          'Pengeluaran',
+                                        ],
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() => _filterType = value);
                                           }
-                                        }
-                                      },
-                                      onDelete: () {
-                                        _showDeleteDialog(context, transaction);
-                                      },
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _buildDropdown(
+                                        value: _dateFilter,
+                                        prefixIcon:
+                                            Icons.calendar_month_rounded,
+                                        items: const [
+                                          'Semua',
+                                          'Hari Ini',
+                                          'Minggu Ini',
+                                          'Bulan Ini',
+                                        ],
+                                        onChanged: (value) {
+                                          if (value != null) {
+                                            setState(() => _dateFilter = value);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  8,
+                                  16,
+                                  8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 10,
+                                      ),
+                                      child: Text(
+                                        'Transaksi',
+                                        style: textTheme.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF1E293B),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withOpacity(
+                                          0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${transactions.length}',
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (hasActiveFilter)
+                                      TextButton.icon(
+                                        style: TextButton.styleFrom(
+                                          visualDensity: VisualDensity.compact,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                          setState(() {
+                                            _filterType = 'Semua';
+                                            _dateFilter = 'Semua';
+                                          });
+                                        },
+                                        icon: const Icon(
+                                          Icons.restart_alt,
+                                          size: 16,
+                                        ),
+                                        label: const Text('Reset'),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (transactions.isEmpty)
+                      const SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _EmptyTransactionView(),
+                      )
+                    else ...[
+                      SliverPadding(
+                        padding: const EdgeInsets.only(bottom: 0),
+                        sliver: SliverList.separated(
+                          itemCount: transactions.length,
+                          separatorBuilder: (context, index) => Container(
+                            color: Colors.white,
+                            child: const Divider(
+                              height: 1,
+                              indent: 80,
+                              endIndent: 24,
+                              color: Color(0xFFF1F5F9),
+                            ),
+                          ),
+                          itemBuilder: (context, index) {
+                            final transaction = transactions[index];
+                            final isFirst = index == 0;
+                            final isLast = index == transactions.length - 1;
+                            return Container(
+                              color: Colors.white,
+                              padding: EdgeInsets.only(bottom: isLast ? 20 : 0),
+                              child: Container(
+                                margin: EdgeInsets.fromLTRB(
+                                  12,
+                                  isFirst ? 12 : 4,
+                                  12,
+                                  isLast ? 4 : 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFFF1F5F9),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: TransactionItem(
+                                  transaction: transaction,
+                                  onTap: () async {
+                                    final cubit = context
+                                        .read<TransactionCubit>();
+                                    final actualIndex = cubit.state.indexOf(
+                                      transaction,
                                     );
+
+                                    if (actualIndex != -1) {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              AddTransactionPage(
+                                                transaction: transaction,
+                                                index: actualIndex,
+                                              ),
+                                        ),
+                                      );
+                                      if (context.mounted) {
+                                        context.read<TransactionCubit>().load();
+                                      }
+                                    }
+                                  },
+                                  onDelete: () {
+                                    _showDeleteDialog(context, transaction);
                                   },
                                 ),
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                  ),
-                ],
+                      ),
+                      // White filler to bottom edge (covers gradient + nav bar area).
+                      SliverToBoxAdapter(
+                        child: Container(
+                          color: Colors.white,
+                          height: 90 + MediaQuery.of(context).padding.bottom,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               );
             },
           ),
@@ -436,45 +569,49 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    final isSelected = _filterType == label;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _filterType = label;
-          });
-        }
-      },
-      selectedColor: Theme.of(context).colorScheme.primary,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildDropdown({
+    required String value,
+    required IconData prefixIcon,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    );
-  }
-
-  Widget _buildDateFilterChip(String label) {
-    final isSelected = _dateFilter == label;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _dateFilter = label;
-          });
-        }
-      },
-      selectedColor: Theme.of(context).colorScheme.secondary,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          isDense: false,
+          itemHeight: 52,
+          borderRadius: BorderRadius.circular(16),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 24),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: const Color(0xFF1E293B),
+            fontWeight: FontWeight.w600,
+          ),
+          items: items
+              .map(
+                (item) => DropdownMenuItem(
+                  value: item,
+                  child: Row(
+                    children: [
+                      Icon(prefixIcon, size: 20, color: Colors.grey.shade600),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(item, overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+        ),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
@@ -502,11 +639,8 @@ class _HomePageState extends State<HomePage> {
           ElevatedButton(
             onPressed: () {
               final cubit = context.read<TransactionCubit>();
-              final allTransactions = cubit.state;
-              final actualIndex = allTransactions.indexOf(transaction);
-              if (actualIndex != -1) {
-                cubit.delete(actualIndex);
-              }
+              final actualIndex = cubit.state.indexOf(transaction);
+              if (actualIndex != -1) cubit.delete(actualIndex);
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -527,6 +661,81 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double minHeight;
+  final double maxHeight;
+  final Widget child;
+
+  const _FilterHeaderDelegate({
+    required this.minHeight,
+    required this.maxHeight,
+    required this.child,
+  });
+
+  @override
+  double get minExtent => minHeight;
+
+  @override
+  double get maxExtent => maxHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return SizedBox.expand(child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _FilterHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child ||
+        oldDelegate.minHeight != minHeight ||
+        oldDelegate.maxHeight != maxHeight;
+  }
+}
+
+class _EmptyTransactionView extends StatelessWidget {
+  const _EmptyTransactionView();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      color: Colors.white,
+      padding: EdgeInsets.fromLTRB(
+        24,
+        48,
+        24,
+        48 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: 80,
+            color: Colors.grey.shade200,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Belum ada transaksi',
+            style: textTheme.titleMedium?.copyWith(
+              color: Colors.grey.shade400,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Mulai catat keuanganmu hari ini!',
+            style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade400),
           ),
         ],
       ),

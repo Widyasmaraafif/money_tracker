@@ -1,28 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../models/transaction_model.dart';
+import '../utils/currency_formatter.dart';
 
-class SummaryCard extends StatelessWidget {
+class SummaryCard extends StatefulWidget {
   final List<TransactionModel> transactions;
 
   const SummaryCard({super.key, required this.transactions});
 
   @override
+  State<SummaryCard> createState() => _SummaryCardState();
+}
+
+class _SummaryCardState extends State<SummaryCard> {
+  bool _obscured = false;
+
+  String _hide(String value) {
+    // Keep length roughly similar, hide digits only.
+    return value.replaceAll(RegExp(r'[0-9]'), '•');
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final totalBalance = _calculateBalance(transactions);
-    final cashBalance = _calculateBalance(transactions, paymentMethod: 'cash');
-    final bankBalance = _calculateBalance(transactions, paymentMethod: 'bank');
-    final totalIncome = _calculateTotal(transactions, 'income');
-    final totalExpense = _calculateTotal(transactions, 'expense');
-    final expenseRatio = totalIncome > 0 ? totalExpense / totalIncome : 0.0;
-    final currencyFormat = NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    );
+    // Single pass aggregation: was 4 full loops before.
+    double totalBalance = 0;
+    double cashBalance = 0;
+    double bankBalance = 0;
+    double totalIncome = 0;
+    double totalExpense = 0;
+    for (final trx in widget.transactions) {
+      final signed = trx.type == 'income' ? trx.amount : -trx.amount;
+      totalBalance += signed;
+      if (trx.paymentMethod == 'cash') {
+        cashBalance += signed;
+      } else {
+        bankBalance += signed;
+      }
+      if (trx.type == 'income') {
+        totalIncome += trx.amount;
+      } else {
+        totalExpense += trx.amount;
+      }
+    }
 
     return Container(
       width: double.infinity,
@@ -35,41 +55,49 @@ class SummaryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Text(
+                'Total Saldo',
+                style: textTheme.titleSmall?.copyWith(
+                  color: Colors.white.withOpacity(0.8),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
                 children: [
-                  Text(
-                    'Total Saldo',
-                    style: textTheme.titleSmall?.copyWith(
-                      color: Colors.white.withOpacity(0.8),
-                      letterSpacing: 0.5,
+                  Expanded(
+                    child: Text(
+                      _obscured
+                          ? _hide(formatRupiah(totalBalance))
+                          : formatRupiah(totalBalance),
+                      style: textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    currencyFormat.format(totalBalance),
-                    style: textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
+                  IconButton(
+                    onPressed: () => setState(() => _obscured = !_obscured),
+                    icon: Icon(
+                      _obscured
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 22,
+                    ),
+                    tooltip: _obscured
+                        ? 'Tampilkan nominal'
+                        : 'Sembunyikan nominal',
+                    constraints: const BoxConstraints(),
+                    style: IconButton.styleFrom(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                 ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: Colors.white,
-                  size: 28,
-                ),
               ),
             ],
           ),
@@ -79,7 +107,9 @@ class SummaryCard extends StatelessWidget {
               _buildSimpleStat(
                 context,
                 'Tunai',
-                currencyFormat.format(cashBalance),
+                _obscured
+                    ? _hide(formatPlain(cashBalance))
+                    : formatPlain(cashBalance),
                 Icons.wallet_rounded,
                 Colors.orangeAccent,
               ),
@@ -87,7 +117,9 @@ class SummaryCard extends StatelessWidget {
               _buildSimpleStat(
                 context,
                 'Bank',
-                currencyFormat.format(bankBalance),
+                _obscured
+                    ? _hide(formatPlain(bankBalance))
+                    : formatPlain(bankBalance),
                 Icons.account_balance_rounded,
                 Colors.lightBlueAccent,
               ),
@@ -99,7 +131,9 @@ class SummaryCard extends StatelessWidget {
               _buildStat(
                 context,
                 'Pemasukan',
-                currencyFormat.format(totalIncome),
+                _obscured
+                    ? _hide(formatRupiah(totalIncome))
+                    : formatRupiah(totalIncome),
                 Icons.arrow_downward_rounded,
                 Colors.greenAccent,
               ),
@@ -107,7 +141,9 @@ class SummaryCard extends StatelessWidget {
               _buildStat(
                 context,
                 'Pengeluaran',
-                currencyFormat.format(totalExpense),
+                _obscured
+                    ? _hide(formatRupiah(totalExpense))
+                    : formatRupiah(totalExpense),
                 Icons.arrow_upward_rounded,
                 Colors.redAccent,
               ),
@@ -147,7 +183,7 @@ class SummaryCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    value.replaceAll('Rp ', ''),
+                    value,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -205,29 +241,5 @@ class SummaryCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  double _calculateBalance(
-    List<TransactionModel> transactions, {
-    String? paymentMethod,
-  }) {
-    double balance = 0;
-    for (var trx in transactions) {
-      if (paymentMethod != null && trx.paymentMethod != paymentMethod) {
-        continue;
-      }
-      if (trx.type == 'income') {
-        balance += trx.amount;
-      } else {
-        balance -= trx.amount;
-      }
-    }
-    return balance;
-  }
-
-  double _calculateTotal(List<TransactionModel> transactions, String type) {
-    return transactions
-        .where((trx) => trx.type == type)
-        .fold(0, (sum, trx) => sum + trx.amount);
   }
 }

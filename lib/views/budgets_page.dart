@@ -59,7 +59,6 @@ class _BudgetsPageState extends State<BudgetsPage> {
     ).format(DateTime(_year, _month));
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Anggaran'),
         leading: IconButton(
@@ -69,9 +68,21 @@ class _BudgetsPageState extends State<BudgetsPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary,
+                colorScheme.primary.withOpacity(0.8),
+                colorScheme.secondary.withOpacity(0.6),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Container(
-        height: MediaQuery.of(context).size.height,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -83,132 +94,136 @@ class _BudgetsPageState extends State<BudgetsPage> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: kToolbarHeight + 20),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_left_rounded,
-                      color: Colors.white,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_left_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => _changeMonth(-1),
                     ),
-                    onPressed: () => _changeMonth(-1),
-                  ),
-                  Text(
-                    periodLabel,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      periodLabel,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Colors.white,
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => _changeMonth(1),
                     ),
-                    onPressed: () => _changeMonth(1),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
-                  ),
+                  ],
                 ),
-                child: BlocBuilder<TransactionCubit, List<TransactionModel>>(
-                  builder: (context, transactions) {
-                    return BlocBuilder<BudgetCubit, List<BudgetModel>>(
-                      builder: (context, allBudgets) {
-                        final budgets = allBudgets
-                            .where(
-                              (b) => b.month == _month && b.year == _year,
-                            )
-                            .toList();
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
+                    ),
+                  ),
+                  child: BlocBuilder<TransactionCubit, List<TransactionModel>>(
+                    builder: (context, transactions) {
+                      return BlocBuilder<BudgetCubit, List<BudgetModel>>(
+                        builder: (context, allBudgets) {
+                          final budgets = allBudgets
+                              .where(
+                                (b) => b.month == _month && b.year == _year,
+                              )
+                              .toList();
 
-                        if (budgets.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.savings_outlined,
-                                  size: 80,
-                                  color: Colors.grey.shade200,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Belum ada anggaran',
-                                  style: textTheme.titleMedium?.copyWith(
-                                    color: Colors.grey.shade400,
-                                    fontWeight: FontWeight.w500,
+                          if (budgets.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.savings_outlined,
+                                    size: 80,
+                                    color: Colors.grey.shade200,
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Atur batas pengeluaran per kategori!',
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 90),
-                          itemCount: budgets.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final budget = budgets[index];
-                            return BudgetItem(
-                              budget: budget,
-                              transactions: transactions,
-                              onTap: () async {
-                                final cubit = context.read<BudgetCubit>();
-                                final actualIndex = cubit.indexOf(budget);
-                                if (actualIndex != -1) {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AddBudgetPage(
-                                        budget: budget,
-                                        index: actualIndex,
-                                      ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Belum ada anggaran',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      color: Colors.grey.shade400,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                  );
-                                  if (context.mounted) {
-                                    context
-                                        .read<BudgetCubit>()
-                                        .loadForMonth(_month, _year);
-                                  }
-                                }
-                              },
-                              onDelete: () {
-                                _showDeleteDialog(context, budget);
-                              },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Atur batas pengeluaran per kategori!',
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey.shade400,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             );
-                          },
-                        );
-                      },
-                    );
-                  },
+                          }
+
+                          return ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(16, 20, 16, 90),
+                            itemCount: budgets.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final budget = budgets[index];
+                              return BudgetItem(
+                                budget: budget,
+                                transactions: transactions,
+                                onTap: () async {
+                                  final cubit = context.read<BudgetCubit>();
+                                  final actualIndex = cubit.indexOf(budget);
+                                  if (actualIndex != -1) {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AddBudgetPage(
+                                          budget: budget,
+                                          index: actualIndex,
+                                        ),
+                                      ),
+                                    );
+                                    if (context.mounted) {
+                                      context.read<BudgetCubit>().loadForMonth(
+                                        _month,
+                                        _year,
+                                      );
+                                    }
+                                  }
+                                },
+                                onDelete: () {
+                                  _showDeleteDialog(context, budget);
+                                },
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -245,10 +260,7 @@ class _BudgetsPageState extends State<BudgetsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
+            child: Text('Batal', style: TextStyle(color: Colors.grey.shade600)),
           ),
           ElevatedButton(
             onPressed: () {

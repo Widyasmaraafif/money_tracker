@@ -3,12 +3,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/transaction_model.dart';
 import '../models/recurring_transaction_model.dart';
 import '../models/budget_model.dart';
+import '../models/saving_goal_model.dart';
 
 class HiveService {
-  final Box<TransactionModel> box = Hive.box<TransactionModel>('transactions');
-  final Box<RecurringTransactionModel> recurringBox =
+  Box<TransactionModel> get box => Hive.box<TransactionModel>('transactions');
+  Box<RecurringTransactionModel> get recurringBox =>
       Hive.box<RecurringTransactionModel>('recurring_transactions');
-  final Box<BudgetModel> budgetBox = Hive.box<BudgetModel>('budgets');
+  Box<BudgetModel> get budgetBox => Hive.box<BudgetModel>('budgets');
+  Box<SavingGoalModel> get savingBox => Hive.box<SavingGoalModel>('savings');
 
   // Transaction methods
   List<TransactionModel> getAll() {
@@ -21,11 +23,20 @@ class HiveService {
     }
   }
 
-  void add(TransactionModel trx) {
+  Future<void> add(TransactionModel trx) async {
     try {
-      box.add(trx);
+      await box.add(trx);
     } catch (e, stackTrace) {
       debugPrint('HiveService.add error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  Future<void> addAll(List<TransactionModel> list) async {
+    try {
+      await box.addAll(list);
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.addAll error: $e');
       debugPrintStack(stackTrace: stackTrace);
     }
   }
@@ -59,12 +70,13 @@ class HiveService {
     }
   }
 
-  void addRecurring(RecurringTransactionModel trx) {
+  Future<int?> addRecurring(RecurringTransactionModel trx) async {
     try {
-      recurringBox.add(trx);
+      return await recurringBox.add(trx);
     } catch (e, stackTrace) {
       debugPrint('HiveService.addRecurring error: $e');
       debugPrintStack(stackTrace: stackTrace);
+      return null;
     }
   }
 
@@ -126,6 +138,44 @@ class HiveService {
       budgetBox.putAt(index, budget);
     } catch (e, stackTrace) {
       debugPrint('HiveService.updateBudget error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  // Saving goal methods
+  List<SavingGoalModel> getAllSavings() {
+    try {
+      return savingBox.values.toList();
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.getAllSavings error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return [];
+    }
+  }
+
+  void addSaving(SavingGoalModel goal) {
+    try {
+      savingBox.add(goal);
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.addSaving error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void deleteSaving(int index) {
+    try {
+      savingBox.deleteAt(index);
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.deleteSaving error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+  }
+
+  void updateSaving(int index, SavingGoalModel goal) {
+    try {
+      savingBox.putAt(index, goal);
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.updateSaving error: $e');
       debugPrintStack(stackTrace: stackTrace);
     }
   }
