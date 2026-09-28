@@ -36,6 +36,7 @@ void main() async {
     Hive.openBox<RecurringTransactionModel>('recurring_transactions'),
     Hive.openBox<BudgetModel>('budgets'),
     Hive.openBox<SavingGoalModel>('savings'),
+    Hive.openBox('settings'),
   ]);
 
   // Render first frame ASAP; notifications + recurring catch-up run after.
@@ -43,6 +44,7 @@ void main() async {
 
   // Non-blocking: don't delay first frame on notification permission dialogs.
   NotificationService.initialize().ignore();
+  NotificationService.refreshDailyLogReminder().ignore();
   _processDueRecurring();
 }
 

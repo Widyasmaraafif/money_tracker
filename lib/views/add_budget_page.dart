@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../blocs/budget_cubit.dart';
+import '../blocs/transaction_cubit.dart';
 import '../models/budget_model.dart';
+import '../models/transaction_model.dart';
+import '../utils/budget_suggestion.dart';
 import '../utils/categories.dart';
 import '../utils/currency_formatter.dart';
 
@@ -11,7 +14,21 @@ class AddBudgetPage extends StatefulWidget {
   final BudgetModel? budget;
   final int? index;
 
-  const AddBudgetPage({super.key, this.budget, this.index});
+  /// Prefill dari saran otomatis (kategori + limit + periode).
+  final String? presetCategory;
+  final double? presetLimit;
+  final int? presetMonth;
+  final int? presetYear;
+
+  const AddBudgetPage({
+    super.key,
+    this.budget,
+    this.index,
+    this.presetCategory,
+    this.presetLimit,
+    this.presetMonth,
+    this.presetYear,
+  });
 
   @override
   State<AddBudgetPage> createState() => _AddBudgetPageState();
@@ -29,13 +46,18 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
     super.initState();
     final now = DateTime.now();
     _limitController = TextEditingController(
-      text: widget.budget != null ? formatAmount(widget.budget!.limit) : '',
+      text: widget.budget != null
+          ? formatAmount(widget.budget!.limit)
+          : widget.presetLimit != null
+          ? formatAmount(widget.presetLimit!)
+          : '',
     );
     _category =
         widget.budget?.category ??
+        widget.presetCategory ??
         TransactionCategory.expenseCategories.first.name;
-    _month = widget.budget?.month ?? now.month;
-    _year = widget.budget?.year ?? now.year;
+    _month = widget.budget?.month ?? widget.presetMonth ?? now.month;
+    _year = widget.budget?.year ?? widget.presetYear ?? now.year;
   }
 
   @override
@@ -164,6 +186,34 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
+                        BlocBuilder<TransactionCubit, List<TransactionModel>>(
+                          builder: (context, transactions) {
+                            final suggestion = suggestBudgetForCategory(
+                              transactions,
+                              _category,
+                              month: _month,
+                              year: _year,
+                            );
+                            if (suggestion == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _SuggestionBox(
+                                suggestion: suggestion,
+                                colorScheme: colorScheme,
+                                textTheme: textTheme,
+                                onApply: () {
+                                  setState(() {
+                                    _limitController.text = formatAmount(
+                                      suggestion.suggested,
+                                    );
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
                         TextFormField(
                           controller: _limitController,
                           style: textTheme.headlineMedium?.copyWith(
@@ -325,6 +375,82 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Kotak saran: rata-rata 3 bulan + tombol "Pakai".
+class _SuggestionBox extends StatelessWidget {
+  final BudgetSuggestion suggestion;
+  final ColorScheme colorScheme;
+  final TextTheme textTheme;
+  final VoidCallback onApply;
+
+  const _SuggestionBox({
+    required this.suggestion,
+    required this.colorScheme,
+    required this.textTheme,
+    required this.onApply,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = List.generate(3, (i) {
+      return '${suggestion.monthLabels[i]}: ${formatRupiahCompact(suggestion.monthlyTotals[i])}';
+    }).join(' • ');
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.primary.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Saran: ${formatRupiah(suggestion.suggested)}',
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: onApply,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text('Pakai'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Rata-rata ${formatRupiahCompact(suggestion.average)}/bln dari ${suggestion.monthsWithData} bln terakhir',
+            style: textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            detail,
+            style: textTheme.labelSmall?.copyWith(
+              color: const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -159,54 +159,7 @@ class TransactionItem extends StatelessWidget {
       ),
       confirmDismiss: (direction) async {
         HapticFeedback.mediumImpact();
-        bool confirm = false;
-        await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.delete_outline_rounded, color: Colors.red),
-                SizedBox(width: 12),
-                Text('Hapus Transaksi?'),
-              ],
-            ),
-            content: Text(
-              'Apakah Anda yakin ingin menghapus "${transaction.title}"?\nTindakan ini tidak dapat dibatalkan.',
-              style: TextStyle(color: Color(0xFF64748B)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  confirm = false;
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  'Batal',
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  confirm = true;
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade50,
-                  foregroundColor: Colors.red,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Hapus'),
-              ),
-            ],
-          ),
-        );
-        return confirm;
+        return true;
       },
       onDismissed: (direction) {
         onDelete?.call();

@@ -50,6 +50,30 @@ class HiveService {
     }
   }
 
+  /// Kembalikan transaksi yang baru dihapus (untuk Undo).
+  /// Mengembalikan index box bila berhasil, null bila gagal.
+  Future<int?> restoreAt(int index, TransactionModel trx) async {
+    try {
+      // Sisipkan kembali di posisi semula; key Hive otomatis baru.
+      final keys = box.keys.cast<int>().toList()..sort();
+      final entries = <int, TransactionModel>{};
+      for (final k in keys) {
+        final v = box.get(k);
+        if (v != null) entries[k] = v;
+      }
+      final safeIndex = index.clamp(0, entries.length);
+      final ordered = entries.values.toList();
+      ordered.insert(safeIndex, trx);
+      await box.clear();
+      await box.addAll(ordered);
+      return safeIndex;
+    } catch (e, stackTrace) {
+      debugPrint('HiveService.restoreAt error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return null;
+    }
+  }
+
   void update(int index, TransactionModel trx) {
     try {
       box.putAt(index, trx);

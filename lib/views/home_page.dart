@@ -8,6 +8,7 @@ import '../models/transaction_model.dart';
 import '../models/budget_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/summary_card.dart';
+import '../widgets/streak_card.dart';
 import 'add_transaction_page.dart';
 import 'add_transfer_page.dart';
 import 'statistics_page.dart';
@@ -184,6 +185,10 @@ class _HomePageState extends State<HomePage> {
                     const SliverToBoxAdapter(child: SizedBox(height: 12)),
                     SliverToBoxAdapter(
                       child: SummaryCard(transactions: allTransactions),
+                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                    SliverToBoxAdapter(
+                      child: StreakCard(transactions: allTransactions),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 12)),
                     SliverToBoxAdapter(
@@ -649,53 +654,35 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showDeleteDialog(BuildContext context, TransactionModel transaction) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.delete_outline_rounded, color: Colors.red),
-            SizedBox(width: 12),
-            Text('Hapus Transaksi?'),
-          ],
+    final cubit = context.read<TransactionCubit>();
+    final actualIndex = cubit.state.indexOf(transaction);
+    if (actualIndex == -1) return;
+
+    // Salin data untuk Undo (objek asli ikut terhapus dari box).
+    final backup = TransactionModel(
+      title: transaction.title,
+      amount: transaction.amount,
+      type: transaction.type,
+      date: transaction.date,
+      category: transaction.category,
+      paymentMethod: transaction.paymentMethod,
+      toPaymentMethod: transaction.toPaymentMethod,
+    );
+    cubit.delete(actualIndex);
+
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('"${backup.title}" dihapus'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action: SnackBarAction(
+          label: 'Urungkan',
+          onPressed: () {
+            cubit.restoreAt(actualIndex, backup);
+          },
         ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus "${transaction.title}"?\nTindakan ini tidak dapat dibatalkan.',
-          style: const TextStyle(color: Color(0xFF64748B)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Batal', style: TextStyle(color: Colors.grey.shade600)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final cubit = context.read<TransactionCubit>();
-              final actualIndex = cubit.state.indexOf(transaction);
-              if (actualIndex != -1) cubit.delete(actualIndex);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('"${transaction.title}" dihapus'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade50,
-              foregroundColor: Colors.red,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
       ),
     );
   }
