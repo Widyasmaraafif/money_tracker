@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -117,6 +118,13 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Money Tracker',
+        locale: const Locale('id', 'ID'),
+        supportedLocales: const [Locale('id', 'ID'), Locale('en', 'US')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
@@ -125,7 +133,7 @@ class MyApp extends StatelessWidget {
             secondary: const Color(0xFF818CF8),
             surface: Colors.white,
             onSurface: const Color(0xFF1E293B),
-            surfaceVariant: const Color(0xFFF8FAFC),
+            surfaceContainerHighest: const Color(0xFFF8FAFC),
             brightness: Brightness.light,
           ),
           textTheme: GoogleFonts.plusJakartaSansTextTheme(

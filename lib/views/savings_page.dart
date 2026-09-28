@@ -8,6 +8,7 @@ import '../models/transaction_model.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/saving_item.dart';
 import 'add_saving_page.dart';
+import 'saving_detail_page.dart';
 
 class SavingsPage extends StatefulWidget {
   const SavingsPage({super.key});
@@ -199,9 +200,7 @@ class _SavingsPageState extends State<SavingsPage> {
                   : Icons.visibility_outlined,
               color: Colors.white,
             ),
-            tooltip: _showArchived
-                ? 'Sembunyikan arsip'
-                : 'Tampilkan arsip',
+            tooltip: _showArchived ? 'Sembunyikan arsip' : 'Tampilkan arsip',
             onPressed: () {
               setState(() => _showArchived = !_showArchived);
             },
@@ -332,7 +331,7 @@ class _SavingsPageState extends State<SavingsPage> {
                                 await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => AddSavingPage(
+                                    builder: (context) => SavingDetailPage(
                                       goal: goal,
                                       index: actualIndex,
                                     ),
@@ -340,8 +339,7 @@ class _SavingsPageState extends State<SavingsPage> {
                                 );
                               }
                             },
-                            onDelete: () =>
-                                _showDeleteDialog(context, goal),
+                            onDelete: () => _showDeleteDialog(context, goal),
                             onDeposit: () {
                               final actualIndex = context
                                   .read<SavingCubit>()

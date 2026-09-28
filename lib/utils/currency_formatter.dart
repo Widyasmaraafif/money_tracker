@@ -22,6 +22,29 @@ final RegExp nonDigits = RegExp(r'[^0-9]');
 
 String formatRupiah(num amount) => rupiahFormat.format(amount);
 
+/// Compact rupiah for tight list rows, e.g. 1500000 -> Rp 1,5 jt.
+/// Only shortens jt/M/T; smaller values keep full format.
+String formatRupiahCompact(num amount) {
+  final abs = amount.abs();
+  if (abs >= 1000000000000) {
+    return 'Rp ${_compactNum(amount / 1000000000000)} T';
+  }
+  if (abs >= 1000000000) {
+    return 'Rp ${_compactNum(amount / 1000000000)} M';
+  }
+  if (abs >= 1000000) {
+    return 'Rp ${_compactNum(amount / 1000000)} jt';
+  }
+  return formatRupiah(amount);
+}
+
+String _compactNum(double value) {
+  if (value >= 100) return value.round().toString();
+  final rounded = (value * 10).round() / 10;
+  if (rounded == rounded.roundToDouble()) return rounded.round().toString();
+  return rounded.toStringAsFixed(1).replaceAll('.', ',');
+}
+
 /// Short digits without symbol/currency, e.g. 5000000 -> 5.000.000
 String formatPlain(num amount) => plainAmountFormat.format(amount).trim();
 

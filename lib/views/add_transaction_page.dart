@@ -70,11 +70,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   void _onTypeChanged(String newType) {
     if (newType == _type) return;
-    setState(() {
-      _type = newType;
-      // Selalu reset ke kategori pertama tipe baru
-      // agar value dropdown selalu valid.
-      _category = TransactionCategory.getAll(newType).first.name;
+    // Lepas fokus keyboard dulu agar EditableText tidak sedang
+    // butuh layout saat parent menanyakan baseline.
+    FocusManager.instance.primaryFocus?.unfocus();
+    // Tunda rebuild ke frame berikut agar layout input selesai dulu.
+    // Langsung setState saat field fokus memicu assert
+    // RenderShiftedBox.computeDistanceToActualBaseline.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || newType == _type) return;
+      setState(() {
+        _type = newType;
+        // Selalu reset ke kategori pertama tipe baru
+        // agar value dropdown selalu valid.
+        _category = TransactionCategory.getAll(newType).first.name;
+      });
     });
   }
 
@@ -188,6 +197,20 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isEditing = widget.transaction != null;
+    // Nilai efektif yang dijamin ada di daftar tipe aktif.
+    // Dipakai untuk value + items dropdown agar tidak assert
+    // "exactly one item with value" saat _type baru diganti.
+    // Tanpa mutasi state di build (mutasi saat layout = baseline assert).
+    final typeCategories = TransactionCategory.getAll(_type);
+    final effectiveCategory = typeCategories.any((c) => c.name == _category)
+        ? _category
+        : typeCategories.first.name;
+    // Sinkronkan state setelah frame selesai, bukan saat layout.
+    if (effectiveCategory != _category) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _category = effectiveCategory);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -300,21 +323,10 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                           ),
                           decoration: InputDecoration(
                             hintText: '0',
-                            prefixIcon: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'Rp',
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
+                            prefixText: 'Rp ',
+                            prefixStyle: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
                             ),
                           ),
                           keyboardType: TextInputType.number,
@@ -365,7 +377,8 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<String>(
-                          value: _category,
+                          key: ValueKey('category_$_type'),
+                          value: effectiveCategory,
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
@@ -378,9 +391,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
                               vertical: 12,
                             ),
                           ),
-                          items: TransactionCategory.getAll(_type).map((
-                            TransactionCategory cat,
-                          ) {
+                          items: typeCategories.map((TransactionCategory cat) {
                             return DropdownMenuItem<String>(
                               value: cat.name,
                               child: Row(

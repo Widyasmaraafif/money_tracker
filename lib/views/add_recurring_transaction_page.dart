@@ -31,7 +31,6 @@ class _AddRecurringTransactionPageState
   late RecurrenceType _recurrenceType;
   bool _hasReminder = false;
   TimeOfDay? _reminderTime;
-  late DateTime _nextOccurrence;
 
   @override
   void initState() {
@@ -53,7 +52,6 @@ class _AddRecurringTransactionPageState
         widget.transaction?.recurrenceType ?? RecurrenceType.monthly;
     _hasReminder = widget.transaction?.hasReminder ?? false;
     _reminderTime = widget.transaction?.reminderTime;
-    _nextOccurrence = widget.transaction?.nextOccurrence ?? _startDate;
   }
 
   @override
@@ -74,8 +72,6 @@ class _AddRecurringTransactionPageState
       setState(() {
         if (isStartDate) {
           _startDate = picked;
-          // Keep nextOccurrence in sync for new entries.
-          if (widget.transaction == null) _nextOccurrence = picked;
           // End date must not be before start date.
           if (_endDate != null && _endDate!.isBefore(_startDate)) {
             _endDate = null;
@@ -239,21 +235,10 @@ class _AddRecurringTransactionPageState
                           ),
                           decoration: InputDecoration(
                             hintText: '0',
-                            prefixIcon: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'Rp',
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
+                            prefixText: 'Rp ',
+                            prefixStyle: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
                             ),
                           ),
                           keyboardType: TextInputType.number,

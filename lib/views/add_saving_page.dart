@@ -44,13 +44,19 @@ class _AddSavingPageState extends State<AddSavingPage> {
   Future<void> _pickDeadline() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final firstDate = today;
+    final lastDate = DateTime(now.year + 10);
+    var initialDate = _deadline ?? today;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _deadline ?? today,
-      firstDate: today,
-      lastDate: DateTime(now.year + 10),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
       locale: const Locale('id', 'ID'),
     );
+    if (!mounted) return;
     if (picked != null) {
       setState(() => _deadline = picked);
     }
@@ -161,21 +167,10 @@ class _AddSavingPageState extends State<AddSavingPage> {
                           ),
                           decoration: InputDecoration(
                             hintText: '0',
-                            prefixIcon: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'Rp',
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
+                            prefixText: 'Rp ',
+                            prefixStyle: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
                             ),
                           ),
                           keyboardType: TextInputType.number,

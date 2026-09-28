@@ -172,21 +172,10 @@ class _AddBudgetPageState extends State<AddBudgetPage> {
                           ),
                           decoration: InputDecoration(
                             hintText: '0',
-                            prefixIcon: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                'Rp',
-                                style: textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
+                            prefixText: 'Rp ',
+                            prefixStyle: textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
                             ),
                           ),
                           keyboardType: TextInputType.number,

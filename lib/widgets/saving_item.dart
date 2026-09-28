@@ -29,19 +29,19 @@ class SavingItem extends StatelessWidget {
     final progressColor = completed
         ? Colors.green.shade600
         : near
-            ? Colors.orange.shade700
-            : colorScheme.primary;
+        ? Colors.orange.shade700
+        : colorScheme.primary;
 
     final statusText = completed
         ? 'Tercapai!'
         : near
-            ? 'Hampir tercapai'
-            : 'Sisa ${formatRupiah(goal.remaining)}';
+        ? 'Hampir tercapai'
+        : 'Sisa ${formatRupiahCompact(goal.remaining)}';
     final statusColor = completed
         ? Colors.green.shade700
         : near
-            ? Colors.orange.shade700
-            : colorScheme.primary;
+        ? Colors.orange.shade700
+        : colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
@@ -55,8 +55,8 @@ class SavingItem extends StatelessWidget {
             color: completed
                 ? Colors.green.shade200
                 : near
-                    ? Colors.orange.shade200
-                    : const Color(0xFFF1F5F9),
+                ? Colors.orange.shade200
+                : const Color(0xFFF1F5F9),
           ),
           boxShadow: [
             BoxShadow(
@@ -133,13 +133,16 @@ class SavingItem extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  '${formatRupiah(goal.currentAmount)} / ${formatRupiah(goal.targetAmount)}',
-                  style: textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF475569),
+                Expanded(
+                  child: Text(
+                    '${formatRupiahCompact(goal.currentAmount)} / ${formatRupiahCompact(goal.targetAmount)}',
+                    style: textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF475569),
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
