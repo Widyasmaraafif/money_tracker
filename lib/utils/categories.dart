@@ -87,6 +87,12 @@ class TransactionCategory {
     ),
   ];
 
+  static const TransactionCategory transfer = TransactionCategory(
+    name: 'Transfer',
+    icon: Icons.swap_horiz_rounded,
+    color: Colors.indigo,
+  );
+
   static const TransactionCategory fallback = TransactionCategory(
     name: 'Lainnya',
     icon: Icons.category_rounded,
@@ -94,11 +100,13 @@ class TransactionCategory {
   );
 
   static final Map<String, TransactionCategory> _byName = {
-    for (final c in [...expenseCategories, ...incomeCategories]) c.name: c,
+    for (final c in [...expenseCategories, ...incomeCategories, transfer]) c.name: c,
   };
 
   static List<TransactionCategory> getAll(String type) {
-    return type == 'income' ? incomeCategories : expenseCategories;
+    if (type == 'income') return incomeCategories;
+    if (type == 'transfer') return const [transfer];
+    return expenseCategories;
   }
 
   static TransactionCategory getByName(String name) =>

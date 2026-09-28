@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/transaction_model.dart';
 import '../utils/categories.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/wallets.dart';
 
 class TransactionItem extends StatelessWidget {
   final TransactionModel transaction;
@@ -19,6 +20,7 @@ class TransactionItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = transaction.type == 'income';
+    final isTransfer = transaction.type == 'transfer';
     final textTheme = Theme.of(context).textTheme;
 
     final category = TransactionCategory.getByName(transaction.category);
@@ -64,9 +66,9 @@ class TransactionItem extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          transaction.paymentMethod == 'cash'
-                              ? 'Tunai'
-                              : 'Bank',
+                          isTransfer && transaction.toPaymentMethod != null
+                              ? '${Wallets.label(transaction.paymentMethod)} → ${Wallets.label(transaction.toPaymentMethod!)}'
+                              : Wallets.label(transaction.paymentMethod),
                           style: textTheme.labelSmall?.copyWith(
                             color: Colors.grey.shade600,
                             fontSize: 10,
@@ -96,18 +98,26 @@ class TransactionItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${isIncome ? '+' : '-'} ${formatPlain(transaction.amount)}',
+                  isTransfer
+                      ? '⇄ ${formatPlain(transaction.amount)}'
+                      : '${isIncome ? '+' : '-'} ${formatPlain(transaction.amount)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isIncome
+                    color: isTransfer
+                        ? Colors.indigo.shade700
+                        : isIncome
                         ? Colors.green.shade700
                         : Colors.red.shade700,
                   ),
                 ),
                 Text(
-                  isIncome ? 'Pemasukan' : 'Pengeluaran',
+                  isTransfer
+                      ? 'Transfer'
+                      : isIncome
+                      ? 'Pemasukan'
+                      : 'Pengeluaran',
                   style: textTheme.labelSmall?.copyWith(
                     color: Colors.grey.shade400,
                   ),

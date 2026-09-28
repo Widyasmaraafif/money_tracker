@@ -22,6 +22,9 @@ class TransactionModel extends HiveObject {
   @HiveField(5)
   String paymentMethod;
 
+  @HiveField(6)
+  String? toPaymentMethod;
+
   TransactionModel({
     required this.title,
     required this.amount,
@@ -29,5 +32,8 @@ class TransactionModel extends HiveObject {
     required this.date,
     required this.category,
     required this.paymentMethod,
+    this.toPaymentMethod,
   });
+
+  bool get isTransfer => type == 'transfer';
 }

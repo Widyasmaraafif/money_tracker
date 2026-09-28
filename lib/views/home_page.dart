@@ -9,6 +9,7 @@ import '../models/budget_model.dart';
 import '../widgets/transaction_item.dart';
 import '../widgets/summary_card.dart';
 import 'add_transaction_page.dart';
+import 'add_transfer_page.dart';
 import 'statistics_page.dart';
 import 'recurring_transactions_page.dart';
 import 'budgets_page.dart';
@@ -23,7 +24,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
-  String _filterType = 'Semua'; // Semua, Pemasukan, Pengeluaran
+  String _filterType = 'Semua'; // Semua, Pemasukan, Pengeluaran, Transfer
   String _dateFilter = 'Semua'; // Semua, Hari Ini, Minggu Ini, Bulan Ini
 
   @override
@@ -134,7 +135,8 @@ class _HomePageState extends State<HomePage> {
                 final matchesFilter =
                     _filterType == 'Semua' ||
                     (_filterType == 'Pemasukan' && trx.type == 'income') ||
-                    (_filterType == 'Pengeluaran' && trx.type == 'expense');
+                    (_filterType == 'Pengeluaran' && trx.type == 'expense') ||
+                    (_filterType == 'Transfer' && trx.type == 'transfer');
 
                 bool matchesDate = true;
                 if (_dateFilter == 'Hari Ini') {
@@ -275,6 +277,7 @@ class _HomePageState extends State<HomePage> {
                                           'Semua',
                                           'Pemasukan',
                                           'Pengeluaran',
+                                          'Transfer',
                                         ],
                                         onChanged: (value) {
                                           if (value != null) {
@@ -432,10 +435,15 @@ class _HomePageState extends State<HomePage> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) =>
-                                              AddTransactionPage(
-                                                transaction: transaction,
-                                                index: actualIndex,
-                                              ),
+                                              transaction.type == 'transfer'
+                                              ? AddTransferPage(
+                                                  transaction: transaction,
+                                                  index: actualIndex,
+                                                )
+                                              : AddTransactionPage(
+                                                  transaction: transaction,
+                                                  index: actualIndex,
+                                                ),
                                         ),
                                       );
                                       if (context.mounted) {
@@ -467,18 +475,43 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddTransactionPage()),
-          );
-          // Refresh list after adding
-          if (context.mounted) {
-            context.read<TransactionCubit>().load();
-          }
-        },
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'transfer',
+            tooltip: 'Transfer dompet',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddTransferPage(),
+                ),
+              );
+              if (context.mounted) {
+                context.read<TransactionCubit>().load();
+              }
+            },
+            child: const Icon(Icons.swap_horiz_rounded),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'add',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddTransactionPage(),
+                ),
+              );
+              // Refresh list after adding
+              if (context.mounted) {
+                context.read<TransactionCubit>().load();
+              }
+            },
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }

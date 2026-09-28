@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/transaction_model.dart';
 import '../utils/currency_formatter.dart';
+import '../utils/wallets.dart';
 
 class SummaryCard extends StatefulWidget {
   final List<TransactionModel> transactions;
@@ -25,24 +26,21 @@ class _SummaryCardState extends State<SummaryCard> {
     final textTheme = Theme.of(context).textTheme;
     // Single pass aggregation: was 4 full loops before.
     double totalBalance = 0;
-    double cashBalance = 0;
-    double bankBalance = 0;
     double totalIncome = 0;
     double totalExpense = 0;
     for (final trx in widget.transactions) {
+      if (trx.type == 'transfer') continue;
       final signed = trx.type == 'income' ? trx.amount : -trx.amount;
       totalBalance += signed;
-      if (trx.paymentMethod == 'cash') {
-        cashBalance += signed;
-      } else {
-        bankBalance += signed;
-      }
       if (trx.type == 'income') {
         totalIncome += trx.amount;
       } else {
         totalExpense += trx.amount;
       }
     }
+    final balances = Wallets.balances(widget.transactions);
+    final cashBalance = balances[Wallets.cash] ?? 0;
+    final bankBalance = balances[Wallets.bank] ?? 0;
 
     return Container(
       width: double.infinity,
