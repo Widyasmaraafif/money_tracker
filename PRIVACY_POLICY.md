@@ -31,7 +31,7 @@ We may update our Privacy Policy from time to time. You are advised to review th
 
 ## 6. Contact Us
 If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at:
-*   **Email**: support@example.com (Please update this with your actual contact email)
+*   **Email**: widyasmaraanr25@gmail.com
 
 ---
 *This privacy policy was generated for the purpose of uploading to Google Play Store.*

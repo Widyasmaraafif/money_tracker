@@ -1,4 +1,4 @@
-package com.app.money_tracker
+package com.pozzydev.money_tracker
 
 import io.flutter.embedding.android.FlutterActivity
 

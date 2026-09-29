@@ -44,4 +44,14 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Signing files - JANGAN commit ke GitHub
+/android/key.properties
+/android/*.jks
+/android/*.keystore
+/android/app/*.jks
+/android/app/*.keystore
+*.jks
+*.keystore
+key.properties
+
 DEVELOPMENT_ROADMAP.md

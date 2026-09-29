@@ -45,9 +45,13 @@ Pastikan Anda sudah menginstal Flutter SDK di komputer Anda.
 
 ## 📸 Cuplikan Layar
 
-| Home Page | Tambah Transaksi |
-| :---: | :---: |
-| ![Home](lib/assets/images/home_page.jpeg) | ![Add](lib/assets/images/add_transaction.jpeg) |
+| Homepage | Tabungan | Transaksi Rutin |
+| :---: | :---: | :---: |
+| ![Homepage](lib/assets/images/homepage.jpg) | ![Tabungan](lib/assets/images/tabungan.jpg) | ![Transaksi Rutin](lib/assets/images/transaksi%20rutin.jpg) |
+
+| Tren 6 Bulan | Detail Tabungan | Anggaran Pintar |
+| :---: | :---: | :---: |
+| ![Tren 6 Bulan](lib/assets/images/tren%206%20bulan.jpg) | ![Detail Tabungan](lib/assets/images/detail%20tabungan.jpg) | ![Anggaran Pintar](lib/assets/images/anggaran%20pintar.jpg) |
 
 ## 📁 Struktur Folder
 
